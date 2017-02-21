@@ -1,0 +1,21 @@
+{
+  "name": "steam-controller-tracker",
+  "version": "0.0.1",
+  "description": "An offshot of the SteamControllerSigner that aims to take advantage of the SC's dual pulse channel nature",
+  "main": "sc_tracker.js",
+  "dependencies": {
+    "usb": "^1.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sm-Fifteen/SteamControllerTracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sm-Fifteen/SteamControllerTracker/issues"
+  },
+  "homepage": "https://github.com/sm-Fifteen/SteamControllerTracker#readme"
+}
