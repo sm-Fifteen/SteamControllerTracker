@@ -49,7 +49,10 @@ function steam_controller_packet.dissector(tvb, pinfo, tree)
 	packetDissector = scPacketTable:get_dissector(mType)
 	msgBuffer = dataBuffer(2, mLength):tvb()
 	
-	if packetDissector == nil then return 0 end
+	if packetDissector == nil then
+
+		return 0
+	end
 	
 	packetDissector:call(msgBuffer, pinfo, tree)
 end
@@ -60,9 +63,9 @@ function steam_controller_feedback.dissector(msgBuffer, pinfo, tree)
 	subtree = tree:add(steam_controller_feedback,msgBuffer())
 	
 	subtree:add(hapticId, msgBuffer(0,1))
-	subtree:add(hiPulseLength, msgBuffer(1,2):le_uint())
-	subtree:add(loPulseLength, msgBuffer(3,2):le_uint())
-	subtree:add(repeatCount, msgBuffer(5,2):le_uint())
+	subtree:add_le(hiPulseLength, msgBuffer(1,2))
+	subtree:add_le(loPulseLength, msgBuffer(3,2))
+	subtree:add_le(repeatCount, msgBuffer(5,2))
 	subtree:add(leftoverBytes, msgBuffer(7))
 	
 	return mLength
