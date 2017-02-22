@@ -69,7 +69,13 @@ function steam_controller_feedback.dissector(msgBuffer, pinfo, tree)
 	subtree:add_le(hiPulseLength, msgBuffer(1,2))
 	subtree:add_le(loPulseLength, msgBuffer(3,2))
 	subtree:add_le(repeatCount, msgBuffer(5,2))
-	subtree:add(msgBuffer(7), "Unknown extra bytes:", tostring(msgBuffer(7):bytes()))
+	
+	local remaining = msgBuffer(7)
+	
+	if remaining:len() ~= 0 then
+		local remainingEntry = subtree:add(remaining, "Unknown extra bytes:", tostring(remaining:bytes()))
+		remainingEntry:add_expert_info(PI_UNDECODED, PI_NOTE)
+	end
 	
 	return mLength
 end
