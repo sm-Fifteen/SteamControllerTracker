@@ -40,18 +40,20 @@ function steam_controller_packet.dissector(tvb, pinfo, tree)
 	
 	subtree = tree:add(steam_controller_packet,dataBuffer())
 	
-	mType = dataBuffer(0,1):uint()
-	mLength = dataBuffer(1,1):uint()
+	mType = dataBuffer(0,1)
+	mLength = dataBuffer(1,1)
 	
-	subtree:add(msgType, dataBuffer(0,1))
-	subtree:add(msgLength, dataBuffer(1,1))
+	subtree:add(msgType, mType)
+	subtree:add(msgLength, mLength)
 	
-	packetDissector = scPacketTable:get_dissector(mType)
-	msgBuffer = dataBuffer(2, mLength):tvb()
+	packetDissector = scPacketTable:get_dissector(mType:uint())
+	msgBuffer = dataBuffer(2, mLength:uint()):tvb()
 	
 	if packetDissector == nil then
-
-		return 0
+		undecodedEntry = tree:add(msgBuffer(), "Unknown Steam Controller message (type 0x", tostring(mType:bytes()), ", length ", mLength:uint(),")")
+		undecodedEntry:add_expert_info(PI_UNDECODED)
+		
+		return
 	end
 	
 	packetDissector:call(msgBuffer, pinfo, tree)
