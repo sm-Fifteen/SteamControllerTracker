@@ -23,6 +23,7 @@ var steamControllerMagicPeriodRatio = 495483.0;
 
 var usb = require('usb');
 var device = usb.findByIds(0x28de, 0x1102);
+device.open();
 var iface = device.interface(2); // Interface 0 is keyboard, 1 is mouse, 2 is "Valve"
 
 if (iface.isKernelDriverActive()) {
@@ -33,7 +34,13 @@ iface.claim();
 
 // MIDI note number [0-127], Duration (in seconds)
 function playNote(device, haptic, note, duration) {
-	var dataBlob = generatePacket(haptic, note, duration);
+	var frequency = midiFrequency[note];
+	var period = 1.0 / frequency;
+	var repeatCount = (duration >= 0.0) ? (duration / period) : 0x7FFF;
+	
+	var dataBlob = generatePacket(haptic, period, period, repeatCount);
+
+	console.log(dataBlob)
 
 	// To class interface :  usb.LIBUSB_REQUEST_TYPE_CLASS + usb.LIBUSB_RECIPIENT_INTERFACE
 	// SET_REPORT : usb.LIBUSB_REQUEST_SET_CONFIGURATION
@@ -53,29 +60,25 @@ function playNote(device, haptic, note, duration) {
 
 //channel.playNote
 
-function generatePacket(haptic, note, duration) {
-	var buffer = new ArrayBuffer(64);
-	var dataView = new DataView(buffer);
+function generatePacket(haptic, hiPulseDuration, loPulseDuration, repeatCount) {
+	var buffer = Buffer.alloc(64);
 	
-	var frequency = midiFrequency[note];
-	var period = 1.0 / frequency;
-	var periodCommand = period * steamControllerMagicPeriodRatio;
-
-	var repeatCount = (duration >= 0.0) ? (duration / period) : 0x7FFF;
-
-	dataView.setUint8(0, 0x8f) // Feedback data packet
-	dataView.setUint8(1, 0x07) // Length = 7 bytes
-	dataView.setUint8(2, haptic % 2) // 0x01 = left, 0x00 = right
-	dataView.setUint16(3, periodCommand, true); // Pulse high duration (LE)
-	dataView.setUint16(5, periodCommand, true); // Pulse low duration (LE)
-	dataView.setUint16(7, repeatCount, true); // Pulse repeat count (LE)
+	hiPulseDuration *= steamControllerMagicPeriodRatio;
+	loPulseDuration *= steamControllerMagicPeriodRatio;
 	
-	return Buffer.from(buffer); //NodeJs buffer
+	var offset = 0;
+
+	offset = buffer.writeUInt8(0x8f, offset) // Feedback data packet
+	offset = buffer.writeUInt8(0x07, offset) // Length = 7 bytes
+	offset = buffer.writeUInt8(haptic % 2, offset) // 0x01 = left, 0x00 = right
+	offset = buffer.writeInt16LE(hiPulseDuration, offset)
+	offset = buffer.writeInt16LE(loPulseDuration, offset)
+	offset = buffer.writeInt16LE(repeatCount, offset)
+	
+	return buffer;
 }
 
 playNote(device, 1, 50, 3)
-
-//nobeBuffer.writeUInt16LE(value, idx)
 
 // LIBUSB_ERROR_ACCESS : Can't access the device as $USER
 // LIBUSB_ERROR_BUSY : Something else is already using the device, probably Steam.
