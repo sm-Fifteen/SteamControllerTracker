@@ -39,19 +39,12 @@ function playNote(device, haptic, note, duration) {
 	var repeatCount = (duration >= 0.0) ? (duration / period) : 0x7FFF;
 	
 	var dataBlob = generatePacket(haptic, period, period, repeatCount);
-
-	console.log(dataBlob)
-
-	// To class interface :  usb.LIBUSB_REQUEST_TYPE_CLASS + usb.LIBUSB_RECIPIENT_INTERFACE
-	// SET_REPORT : usb.LIBUSB_REQUEST_SET_CONFIGURATION
-	// HID : ????
-	// Interface : iface.interface
-
+	
 	var sendBlob = device.controlTransfer.bind(device, 
-		0x21, // To class interface (0010 0001)
-		0x09, // SET_REPORT
+		usb.LIBUSB_REQUEST_TYPE_CLASS + usb.LIBUSB_RECIPIENT_INTERFACE, // To class interface
+		usb.LIBUSB_REQUEST_SET_CONFIGURATION,
 		0x0300, // HID Report type & ID?
-		2 // wIndex/Interface
+		iface.interfaceNumber
 	)
 
 	sendBlob(dataBlob);
