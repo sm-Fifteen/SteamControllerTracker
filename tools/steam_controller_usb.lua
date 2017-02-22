@@ -1,36 +1,19 @@
 require("bit")
 
--- USB frame (abstracted)
--- -- USB Control transfer
--- -- -- SC message
--- -- -- -- SC feedback
+-- Dissector Table for steam controller control packets
+scPacketTable = DissectorTable.new("sc_packet.msgType", "Steam Controller Packet", ftypes.UINT8, base.HEX)
 
+------------------------------------------------------
+-- Wrapper (USB Control transfer decoder)
+------------------------------------------------------
 
 steam_controller_packet = Proto("sc_packet",  "Steam Controller packet")
-msgType = ProtoField.uint8("sc_packet.msgType")
-msgLength = ProtoField.uint8("sc_packet.msgLength")
+msgType = ProtoField.uint8("sc_packet.msgType", "Message type", base.HEX)
+msgLength = ProtoField.uint8("sc_packet.msgLength", "Message length")
 
 steam_controller_packet.fields = {
 	msgType,
 	msgLength
-}
-
-scPacketTable = DissectorTable.new("sc_packet.msgType", "Steam Controller Packet", ftypes.UINT8, base.HEX)
-
-steam_controller_feedback = Proto("sc_msg_feedback",  "Steam Controller feedback message")
-
-hapticId = ProtoField.uint8("sc_msg_feedback.hapticId")
-hiPulseLength = ProtoField.uint16("sc_msg_feedback.hiPulseLength")
-loPulseLength = ProtoField.uint16("sc_msg_feedback.loPulseLength")
-repeatCount = ProtoField.uint16("sc_msg_feedback.repeatCount")
-leftoverBytes = ProtoField.bytes("sc_msg_feedback.leftoverBytes")
-
-steam_controller_feedback.fields = {
-	hapticId,
-	hiPulseLength,
-	loPulseLength,
-	repeatCount,
-	leftoverBytes
 }
 
 function steam_controller_packet.dissector(tvb, pinfo, tree)
@@ -58,6 +41,24 @@ function steam_controller_packet.dissector(tvb, pinfo, tree)
 	
 	packetDissector:call(msgBuffer, pinfo, tree)
 end
+
+------------------------------------------------------
+-- Type 0x8f : Feedback
+------------------------------------------------------
+
+steam_controller_feedback = Proto("sc_msg_feedback",  "Steam Controller feedback message")
+
+hapticId = ProtoField.uint8("sc_msg_feedback.hapticId", "Selected acuator")
+hiPulseLength = ProtoField.uint16("sc_msg_feedback.hiPulseLength", "High pulse duration")
+loPulseLength = ProtoField.uint16("sc_msg_feedback.loPulseLength", "Low pulse duration")
+repeatCount = ProtoField.uint16("sc_msg_feedback.repeatCount", "Repetitions")
+
+steam_controller_feedback.fields = {
+	hapticId,
+	hiPulseLength,
+	loPulseLength,
+	repeatCount
+}
 				
 function steam_controller_feedback.dissector(msgBuffer, pinfo, tree)
 	pinfo.cols.protocol = "SC_feedback";
@@ -68,12 +69,14 @@ function steam_controller_feedback.dissector(msgBuffer, pinfo, tree)
 	subtree:add_le(hiPulseLength, msgBuffer(1,2))
 	subtree:add_le(loPulseLength, msgBuffer(3,2))
 	subtree:add_le(repeatCount, msgBuffer(5,2))
-	subtree:add(leftoverBytes, msgBuffer(7))
+	subtree:add(msgBuffer(7), "Unknown extra bytes:", tostring(msgBuffer(7):bytes()))
 	
 	return mLength
 end
 
 scPacketTable:add(0x8f, steam_controller_feedback)
+
+------------------------------------------------------
 
 local parent_subfield = DissectorTable.get("usb.product")
 parent_subfield:add(0x28de1102,steam_controller_packet) --USB controller
