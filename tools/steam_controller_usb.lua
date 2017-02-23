@@ -4,7 +4,34 @@ require("bit")
 scPacketTable = DissectorTable.new("sc_packet.msgType", "Steam Controller Packet", ftypes.UINT8, base.HEX)
 
 ------------------------------------------------------
--- Wrapper (USB Control transfer decoder)
+-- USB Control transfer heuristic (for the setup header)
+------------------------------------------------------
+
+-- usb.control heuristics get the URB setup header minus the first byte
+-- and the data inside it, exactly what the usb dissector tables get sent.
+-- That a bug?
+
+function sc_packet_heuristic(tvb, pinfo, tree)
+	if tvb:len() == 0 then return false end
+	
+	--bmRequestTypeBuf = tvb(0,1)
+	bRequestBuf = tvb(0,1)
+	wValueBuf = tvb(1,2)
+	wIndexBuf = tvb(3,2)
+	wLengthBuf = tvb(5,2)
+	dataBuffer = tvb(7):tvb()
+	
+	if wLengthBuf:le_uint() ~= dataBuffer:len() then
+		return false
+	end
+	
+	-- Dissect the packet it and return true
+	sc_packet_dissector:call(dataBuffer, pinfo, tree)
+	return true
+end
+
+------------------------------------------------------
+-- Wrapper
 ------------------------------------------------------
 
 steam_controller_packet = Proto("sc_packet",  "Steam Controller packet")
@@ -17,8 +44,6 @@ steam_controller_packet.fields = {
 }
 
 function steam_controller_packet.dissector(tvb, pinfo, tree)
-	if tvb:len() < 71 then return 0 end
-	dataBuffer = tvb:range(7, 64) -- To get rid of the 7 bits control header
 	pinfo.cols.protocol = "SC_set_report";
 	
 	subtree = tree:add(steam_controller_packet,dataBuffer())
@@ -84,6 +109,7 @@ scPacketTable:add(0x8f, steam_controller_feedback)
 
 ------------------------------------------------------
 
-local parent_subfield = DissectorTable.get("usb.product")
-parent_subfield:add(0x28de1102,steam_controller_packet) --USB controller
-parent_subfield:add(0x28de1142,steam_controller_packet) --Dongle
+sc_packet_dissector = steam_controller_packet.dissector
+steam_controller_packet:register_heuristic("usb.control", sc_packet_heuristic)
+--dTable:add(0x28de1102,steam_controller_packet) --USB controller
+--dTable:add(0x28de1142,steam_controller_packet) --Dongle
