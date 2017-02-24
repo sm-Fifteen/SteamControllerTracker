@@ -74,9 +74,9 @@ function generatePacket(haptic, highPulseMicroSec, lowPulseMicroSec, repeatCount
 	offset = buffer.writeUInt8(0x8f, offset) // Feedback data packet
 	offset = buffer.writeUInt8(0x07, offset) // Length = 7 bytes
 	offset = buffer.writeUInt8(haptic % 2, offset) // 0x01 = left, 0x00 = right
-	offset = buffer.writeInt16LE(highPulseMicroSec, offset)
-	offset = buffer.writeInt16LE(lowPulseMicroSec, offset)
-	offset = buffer.writeInt16LE(repeatCount, offset)
+	offset = buffer.writeUInt16LE(highPulseMicroSec, offset)
+	offset = buffer.writeUInt16LE(lowPulseMicroSec, offset)
+	offset = buffer.writeUInt16LE(repeatCount, offset)
 	
 	return buffer;
 }
