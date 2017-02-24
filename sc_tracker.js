@@ -31,30 +31,31 @@ if (iface.isKernelDriverActive()) {
 
 iface.claim();
 
+var sendBlob = device.controlTransfer.bind(device, 
+	usb.LIBUSB_REQUEST_TYPE_CLASS + usb.LIBUSB_RECIPIENT_INTERFACE, // To class interface
+	usb.LIBUSB_REQUEST_SET_CONFIGURATION,
+	0x0300, // HID Report type & ID?
+	iface.interfaceNumber
+)
+
 // MIDI note number [0-127], Duration (in seconds)
 function playNote(device, haptic, note, duration) {
 	var frequency = midiFrequency[note];
+	console.log(frequency)
 	var repeatCount = (duration >= 0.0) ? (duration * frequency) : 0x7FFF;
-	var [highPulse, lowPulse] = getPulseValues(frequency, 1, 1);
+	var [highPulse, lowPulse] = getPulseValues(frequency, 7, 1);
 	
 	var dataBlob = generatePacket(haptic, highPulse, lowPulse, repeatCount);
-	
-	var sendBlob = device.controlTransfer.bind(device, 
-		usb.LIBUSB_REQUEST_TYPE_CLASS + usb.LIBUSB_RECIPIENT_INTERFACE, // To class interface
-		usb.LIBUSB_REQUEST_SET_CONFIGURATION,
-		0x0300, // HID Report type & ID?
-		iface.interfaceNumber
-	)
 
 	sendBlob(dataBlob);
 }
 
 function getPulseValues(frequency, hiRate = 1, loRate = 1) {
-	// Value from the SC signer
-	var SCPeriodRatio = 495483;
+	var SCPeriodRatio = 2 * 495483; // Value from the SC signer
+	//var SCPeriodRatio = 1000000; // 1 million milliseconds
 	
-	var hiPulseNum = 2 * hiRate * SCPeriodRatio;
-	var loPulseNum = 2 * loRate * SCPeriodRatio;
+	var hiPulseNum = hiRate * SCPeriodRatio;
+	var loPulseNum = loRate * SCPeriodRatio;
 	var dutyCycleDenum = frequency * (hiRate + loRate);
 	
 	var highPulse = hiPulseNum/dutyCycleDenum;
@@ -65,7 +66,7 @@ function getPulseValues(frequency, hiRate = 1, loRate = 1) {
 
 //channel.playNote
 
-function generatePacket(haptic, highPulseValue, lowPulseValue, repeatCount) {
+function generatePacket(haptic, highPulseMicroSec, lowPulseMicroSec, repeatCount) {
 	var buffer = Buffer.alloc(64);
 	
 	var offset = 0;
@@ -73,14 +74,23 @@ function generatePacket(haptic, highPulseValue, lowPulseValue, repeatCount) {
 	offset = buffer.writeUInt8(0x8f, offset) // Feedback data packet
 	offset = buffer.writeUInt8(0x07, offset) // Length = 7 bytes
 	offset = buffer.writeUInt8(haptic % 2, offset) // 0x01 = left, 0x00 = right
-	offset = buffer.writeInt16LE(highPulseValue, offset)
-	offset = buffer.writeInt16LE(lowPulseValue, offset)
+	offset = buffer.writeInt16LE(highPulseMicroSec, offset)
+	offset = buffer.writeInt16LE(lowPulseMicroSec, offset)
 	offset = buffer.writeInt16LE(repeatCount, offset)
 	
 	return buffer;
 }
 
-playNote(device, 1, 50, 3)
+
+// Play A440
+playNote(device, 1, 69, 3)
+
+
+/*
+// Send a 100us pulse wave with a 1000us period 5000 times, for a total of exactly 5 seconds.
+sendBlob(generatePacket(1, 100, 900, 5000))
+setTimeout(function(){}, 5000);
+*/
 
 // LIBUSB_ERROR_ACCESS : Can't access the device as $USER
 // LIBUSB_ERROR_BUSY : Something else is already using the device, probably Steam.
