@@ -19,7 +19,6 @@ var midiFrequency  = [
 	4186.01, 4434.92, 4698.64, 4978.03, 5274.04, 5587.65, 5919.91, 6271.93, 6644.88, 7040,  7458.62, 7902.13,
 	8372.02, 8869.84, 9397.27, 9956.06, 10548.1, 11175.3, 11839.8, 12543.9
 ];
-var steamControllerMagicPeriodRatio = 495483.0;
 
 var usb = require('usb');
 var device = usb.findByIds(0x28de, 0x1102);
@@ -35,10 +34,10 @@ iface.claim();
 // MIDI note number [0-127], Duration (in seconds)
 function playNote(device, haptic, note, duration) {
 	var frequency = midiFrequency[note];
-	var period = 1.0 / frequency;
-	var repeatCount = (duration >= 0.0) ? (duration / period) : 0x7FFF;
+	var repeatCount = (duration >= 0.0) ? (duration * frequency) : 0x7FFF;
+	var [highPulse, lowPulse] = getPulseValues(frequency, 1, 1);
 	
-	var dataBlob = generatePacket(haptic, period, period, repeatCount);
+	var dataBlob = generatePacket(haptic, highPulse, lowPulse, repeatCount);
 	
 	var sendBlob = device.controlTransfer.bind(device, 
 		usb.LIBUSB_REQUEST_TYPE_CLASS + usb.LIBUSB_RECIPIENT_INTERFACE, // To class interface
@@ -50,22 +49,32 @@ function playNote(device, haptic, note, duration) {
 	sendBlob(dataBlob);
 }
 
+function getPulseValues(frequency, hiRate = 1, loRate = 1) {
+	// Value from the SC signer
+	var SCPeriodRatio = 495483;
+	
+	var hiPulseNum = 2 * hiRate * SCPeriodRatio;
+	var loPulseNum = 2 * loRate * SCPeriodRatio;
+	var dutyCycleDenum = frequency * (hiRate + loRate);
+	
+	var highPulse = hiPulseNum/dutyCycleDenum;
+	var lowPulse = loPulseNum/dutyCycleDenum;
+	
+	return [highPulse, lowPulse]
+}
 
 //channel.playNote
 
-function generatePacket(haptic, hiPulseDuration, loPulseDuration, repeatCount) {
+function generatePacket(haptic, highPulseValue, lowPulseValue, repeatCount) {
 	var buffer = Buffer.alloc(64);
-	
-	hiPulseDuration *= steamControllerMagicPeriodRatio;
-	loPulseDuration *= steamControllerMagicPeriodRatio;
 	
 	var offset = 0;
 
 	offset = buffer.writeUInt8(0x8f, offset) // Feedback data packet
 	offset = buffer.writeUInt8(0x07, offset) // Length = 7 bytes
 	offset = buffer.writeUInt8(haptic % 2, offset) // 0x01 = left, 0x00 = right
-	offset = buffer.writeInt16LE(hiPulseDuration, offset)
-	offset = buffer.writeInt16LE(loPulseDuration, offset)
+	offset = buffer.writeInt16LE(highPulseValue, offset)
+	offset = buffer.writeInt16LE(lowPulseValue, offset)
 	offset = buffer.writeInt16LE(repeatCount, offset)
 	
 	return buffer;
