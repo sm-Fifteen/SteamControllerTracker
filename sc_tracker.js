@@ -20,6 +20,9 @@ var midiFrequency  = [
 	8372.02, 8869.84, 9397.27, 9956.06, 10548.1, 11175.3, 11839.8, 12543.9
 ];
 
+var noteBaseNameArray = [" C","C#"," D","D#"," E"," F","F#"," G","G#"," A","A#"," B"];
+
+var sleep = require('sleep');
 var usb = require('usb');
 var device = usb.findByIds(0x28de, 0x1102);
 device.open();
@@ -39,11 +42,17 @@ var sendBlob = device.controlTransfer.bind(device,
 )
 
 // MIDI note number [0-127], Duration (in seconds)
-function playNote(device, haptic, note, duration) {
+function playNote(device, haptic, note, duration, hiRate = 1, loRate = 1) {
 	var frequency = midiFrequency[note];
-	console.log(frequency)
+	
+	console.log(
+		noteBaseNameArray[note % 12] +
+		Math.floor((note/12) -1) +
+		" ("+ frequency + "Hz)"
+	);
+	
 	var repeatCount = (duration >= 0.0) ? (duration * frequency) : 0x7FFF;
-	var [highPulse, lowPulse] = getPulseValues(frequency, 7, 1);
+	var [highPulse, lowPulse] = getPulseValues(frequency, hiRate, loRate);
 	
 	var dataBlob = generatePacket(haptic, highPulse, lowPulse, repeatCount);
 
@@ -81,10 +90,20 @@ function generatePacket(haptic, highPulseMicroSec, lowPulseMicroSec, repeatCount
 	return buffer;
 }
 
+// From C-1 to B-8, the 95 XM notes
+//for(var i = 24; i <= 119; i++) {
+// B-6 max, I've heard enough teen buzz for a lifetime.
+//for(var i = 24; i <= 95; i++) {
+//The controller only seems to resonate on frequencies close to A depending on the duty cycle
+for(var i = 33; i <= 69; i+=12) {
+	playNote(device, 1, i, 1, 1, 1);
+	sleep.sleep(1);
+}
 
+/*
 // Play A440
 playNote(device, 1, 69, 3)
-
+*/
 
 /*
 // Send a 100us pulse wave with a 1000us period 5000 times, for a total of exactly 5 seconds.
