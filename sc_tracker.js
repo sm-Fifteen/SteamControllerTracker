@@ -21,9 +21,11 @@ var midiFrequency  = [
 ];
 
 var usb = require('usb');
+var devices = [];
 var device = usb.findByIds(0x28de, 0x1102);
 device.open();
 var iface = device.interface(2); // Interface 0 is keyboard, 1 is mouse, 2 is "Valve"
+devices.push(device);
 
 if (iface.isKernelDriverActive()) {
 	iface.detachKernelDriver();
@@ -31,24 +33,27 @@ if (iface.isKernelDriverActive()) {
 
 iface.claim();
 
-var sendBlob = device.controlTransfer.bind(device, 
-	usb.LIBUSB_REQUEST_TYPE_CLASS + usb.LIBUSB_RECIPIENT_INTERFACE, // To class interface
-	usb.LIBUSB_REQUEST_SET_CONFIGURATION,
-	0x0300, // HID Report type & ID?
-	iface.interfaceNumber
-)
-
 // MIDI note number [0-127], Duration (in seconds)
-function playNote(device, haptic, note, duration, hiRate = 1, loRate = 1) {
+function playNote(channel, note, duration, hiRate = 1, loRate = 1) {
 	var frequency = midiFrequency[note];
 	displayNote(note);
 	
-	playFrequency(device, haptic, frequency, duration, hiRate, loRate);
+	playFrequency(channel, frequency, duration, hiRate, loRate);
 }
 
-function playFrequency(device, haptic, frequency, duration, hiRate = 1, loRate = 1) {
+function playFrequency(channel, frequency, duration, hiRate = 1, loRate = 1) {
 	var repeatCount = (duration >= 0.0) ? (duration * frequency) : 0x7FFF;
 	var [highPulse, lowPulse] = getPulseValues(frequency, hiRate, loRate);
+	
+	var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
+	var haptic = channel%2;
+	
+	var sendBlob = device.controlTransfer.bind(device, 
+		usb.LIBUSB_REQUEST_TYPE_CLASS + usb.LIBUSB_RECIPIENT_INTERFACE, // To class interface
+		usb.LIBUSB_REQUEST_SET_CONFIGURATION,
+		0x0300, // HID Report type & ID?
+		iface.interfaceNumber
+	)
 	
 	var dataBlob = generatePacket(haptic, highPulse, lowPulse, repeatCount);
 
@@ -97,42 +102,42 @@ function generatePacket(haptic, highPulseMicroSec, lowPulseMicroSec, repeatCount
 	return buffer;
 }
 
-function playRange(device, haptic, note, stopNote, duration, hiRate = 1, loRate = 1, stepSize = 1) {
-	playNote(device, haptic, note, duration, hiRate, loRate);
+function playRange(channel, note, stopNote, duration, hiRate = 1, loRate = 1, stepSize = 1) {
+	playNote(channel, note, duration, hiRate, loRate);
 	
 	if (note >= stopNote) return;
 	
 	setTimeout(function(){
-		playRange(device, haptic, note + stepSize, stopNote, duration, hiRate, loRate, stepSize);
+		playRange(channel, note + stepSize, stopNote, duration, hiRate, loRate, stepSize);
 	}, duration * 1000);
 }
 
-function playDTMF(device, number, duration) {
+function playDTMF(channel1, channel2, number, duration) {
 	console.log(number)
 	switch (number) {
 		case 1:
 		case 2:
 		case 3:
 		case 'A':
-			playFrequency(device, 0, 697, duration);
+			playFrequency(channel1, 697, duration);
 			break;
 		case 4:
 		case 5:
 		case 6:
 		case 'B':
-			playFrequency(device, 0, 770, duration);
+			playFrequency(channel1, 770, duration);
 			break;
 		case 7:
 		case 8:
 		case 9:
 		case 'C':
-			playFrequency(device, 0, 852, duration);
+			playFrequency(channel1, 852, duration);
 			break;
 		case '*':
 		case 0:
 		case '#':
 		case 'D':
-			playFrequency(device, 0, 941, duration);
+			playFrequency(channel1, 941, duration);
 	}
 	
 	switch (number) {
@@ -140,35 +145,35 @@ function playDTMF(device, number, duration) {
 		case 4:
 		case 7:
 		case '*':
-			playFrequency(device, 1, 1209, duration);
+			playFrequency(channel2, 1209, duration);
 			break;
 		case 2:
 		case 5:
 		case 8:
 		case 0:
-			playFrequency(device, 1, 1336, duration);
+			playFrequency(channel2, 1336, duration);
 			break;
 		case 3:
 		case 6:
 		case 9:
 		case '#':
-			playFrequency(device, 1, 1477, duration);
+			playFrequency(channel2, 1477, duration);
 			break;
 		case 'A':
 		case 'B':
 		case 'C':
 		case 'D':
-			playFrequency(device, 1, 1633, duration);
+			playFrequency(channel2, 1633, duration);
 			break;
 	}
 }
 
-function playDTMFSequence(device, numberList, duration, spacing = 0) {
-	playDTMF(device, numberList.shift(), duration);
+function playDTMFSequence(channel1, channel2, numberList, duration, spacing = 0) {
+	playDTMF(channel1, channel2, numberList.shift(), duration);
 	if (numberList.length == 0) return;
 
 	setTimeout(function(){
-		playDTMFSequence(device, numberList, duration, spacing);
+		playDTMFSequence(channel1, channel2, numberList, duration, spacing);
 	}, duration * 1000 + spacing * 1000);
 }
 
@@ -181,10 +186,10 @@ function playDTMFSequence(device, numberList, duration, spacing = 0) {
 //playRange(device, 1, 33, 69, 1, 1, 7, 12)
 
 
-/*
+
 // Play A440
-playNote(device, 1, 69, 3)
-*/
+playNote(1, 69, 3)
+
 
 /*
 // Send a 100us pulse wave with a 1000us period 5000 times, for a total of exactly 5 seconds.
@@ -192,9 +197,10 @@ sendBlob(generatePacket(1, 100, 900, 5000))
 setTimeout(function(){}, 5000);
 */
 
+/*
 //https://en.wikipedia.org/wiki/File:Dial_up_modem_noises.ogg
-playDTMFSequence(device, [1,5,7,0,2,3,4,0,0,0,3], 0.12, 0.08);
-
+playDTMFSequence(0, 1, [1,5,7,0,2,3,4,0,0,0,3], 0.12, 0.08);
+*/
 
 // LIBUSB_ERROR_ACCESS : Can't access the device as $USER
 // LIBUSB_ERROR_BUSY : Something else is already using the device, probably Steam.
