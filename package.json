@@ -1,8 +1,8 @@
 {
   "name": "steam-controller-tracker",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An offshot of the SteamControllerSigner that aims to take advantage of the SC's dual pulse channel nature",
-  "main": "sc_tracker.js",
+  "main": "sc_test.js",
   "dependencies": {
     "usb": "^1.2.0"
   },
