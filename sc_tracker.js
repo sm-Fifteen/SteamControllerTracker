@@ -20,7 +20,6 @@ var midiFrequency  = [
 	8372.02, 8869.84, 9397.27, 9956.06, 10548.1, 11175.3, 11839.8, 12543.9
 ];
 
-var sleep = require('sleep');
 var usb = require('usb');
 var device = usb.findByIds(0x28de, 0x1102);
 device.open();
@@ -42,8 +41,12 @@ var sendBlob = device.controlTransfer.bind(device,
 // MIDI note number [0-127], Duration (in seconds)
 function playNote(device, haptic, note, duration, hiRate = 1, loRate = 1) {
 	var frequency = midiFrequency[note];
-	displayNote(note)
+	displayNote(note);
 	
+	playFrequency(device, haptic, frequency, duration, hiRate, loRate);
+}
+
+function playFrequency(device, haptic, frequency, duration, hiRate = 1, loRate = 1) {
 	var repeatCount = (duration >= 0.0) ? (duration * frequency) : 0x7FFF;
 	var [highPulse, lowPulse] = getPulseValues(frequency, hiRate, loRate);
 	
@@ -104,11 +107,76 @@ function playRange(device, haptic, note, stopNote, duration, hiRate = 1, loRate 
 	}, duration * 1000);
 }
 
+function playDTMF(device, number, duration) {
+	console.log(number)
+	switch (number) {
+		case 1:
+		case 2:
+		case 3:
+		case 'A':
+			playFrequency(device, 0, 697, duration);
+			break;
+		case 4:
+		case 5:
+		case 6:
+		case 'B':
+			playFrequency(device, 0, 770, duration);
+			break;
+		case 7:
+		case 8:
+		case 9:
+		case 'C':
+			playFrequency(device, 0, 852, duration);
+			break;
+		case '*':
+		case 0:
+		case '#':
+		case 'D':
+			playFrequency(device, 0, 941, duration);
+	}
+	
+	switch (number) {
+		case 1:
+		case 4:
+		case 7:
+		case '*':
+			playFrequency(device, 1, 1209, duration);
+			break;
+		case 2:
+		case 5:
+		case 8:
+		case 0:
+			playFrequency(device, 1, 1336, duration);
+			break;
+		case 3:
+		case 6:
+		case 9:
+		case '#':
+			playFrequency(device, 1, 1477, duration);
+			break;
+		case 'A':
+		case 'B':
+		case 'C':
+		case 'D':
+			playFrequency(device, 1, 1633, duration);
+			break;
+	}
+}
+
+function playDTMFSequence(device, numberList, duration, spacing = 0) {
+	playDTMF(device, numberList.shift(), duration);
+	if (numberList.length == 0) return;
+
+	setTimeout(function(){
+		playDTMFSequence(device, numberList, duration, spacing);
+	}, duration * 1000 + spacing * 1000);
+}
+
 // From C-1 to B-8, the 95 XM notes
 //playRange(device, 1, 24, 119, 1, 1, 7)
 // B-6 max, I've heard enough teen buzz for a lifetime.
 //for(var i = 24; i <= 95; i++) {
-playRange(device, 1, 24, 95, 1, 1, 7)
+//playRange(device, 1, 24, 95, 1, 1, 7)
 //The controller only seems to resonate on frequencies close to A depending on the duty cycle
 //playRange(device, 1, 33, 69, 1, 1, 7, 12)
 
@@ -123,6 +191,10 @@ playNote(device, 1, 69, 3)
 sendBlob(generatePacket(1, 100, 900, 5000))
 setTimeout(function(){}, 5000);
 */
+
+//https://en.wikipedia.org/wiki/File:Dial_up_modem_noises.ogg
+playDTMFSequence(device, [1,5,7,0,2,3,4,0,0,0,3], 0.12, 0.08);
+
 
 // LIBUSB_ERROR_ACCESS : Can't access the device as $USER
 // LIBUSB_ERROR_BUSY : Something else is already using the device, probably Steam.
