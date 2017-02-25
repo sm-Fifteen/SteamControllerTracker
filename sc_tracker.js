@@ -20,8 +20,6 @@ var midiFrequency  = [
 	8372.02, 8869.84, 9397.27, 9956.06, 10548.1, 11175.3, 11839.8, 12543.9
 ];
 
-var noteBaseNameArray = [" C","C#"," D","D#"," E"," F","F#"," G","G#"," A","A#"," B"];
-
 var sleep = require('sleep');
 var usb = require('usb');
 var device = usb.findByIds(0x28de, 0x1102);
@@ -44,12 +42,7 @@ var sendBlob = device.controlTransfer.bind(device,
 // MIDI note number [0-127], Duration (in seconds)
 function playNote(device, haptic, note, duration, hiRate = 1, loRate = 1) {
 	var frequency = midiFrequency[note];
-	
-	console.log(
-		noteBaseNameArray[note % 12] +
-		Math.floor((note/12) -1) +
-		" ("+ frequency + "Hz)"
-	);
+	displayNote(note)
 	
 	var repeatCount = (duration >= 0.0) ? (duration * frequency) : 0x7FFF;
 	var [highPulse, lowPulse] = getPulseValues(frequency, hiRate, loRate);
@@ -57,6 +50,17 @@ function playNote(device, haptic, note, duration, hiRate = 1, loRate = 1) {
 	var dataBlob = generatePacket(haptic, highPulse, lowPulse, repeatCount);
 
 	sendBlob(dataBlob);
+}
+
+function displayNote(note) {
+	const noteBaseNameArray = [" C","C#"," D","D#"," E"," F","F#"," G","G#"," A","A#"," B"];
+	var frequency = midiFrequency[note];
+	
+	console.log(
+		noteBaseNameArray[note % 12] +
+		Math.floor((note/12) -1) +
+		" ("+ frequency + "Hz)"
+	);
 }
 
 function getPulseValues(frequency, hiRate = 1, loRate = 1) {
