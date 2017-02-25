@@ -74,7 +74,22 @@ function playDTMFSequence(channel1, channel2, numberList, duration, spacing = 0)
 	}, duration * 1000 + spacing * 1000);
 }
 
+/*
+ * http://www.microchip.com/forums/FindPost/403949
+ * "If a square wave was used for dial tone then a DTMF dial digit could
+ * not be detected because the DTMF decoder would be overloaded by the
+ * harmonics of the 440Hz square wave."
+ */
+
+function playDialTone(channel1, channel2, duration) {
+	// FIXME : Doesn't sound quite right, not having sine waves doesn't help.
+	player.playFrequency(channel1, 350, duration, 1, 1);
+	// Don't use a 1:1 duty cycle on A440 unless you want tinnitus
+	player.playFrequency(channel2, 440, duration, 1, 4);
+}
+
 module.exports = {
 	playDTMF: playDTMF,
 	playDTMFSequence: playDTMFSequence,
+	playDialTone: playDialTone,
 }

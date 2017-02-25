@@ -20,6 +20,8 @@ sendBlob(generatePacket(1, 100, 900, 5000))
 setTimeout(function(){}, 5000);
 */
 
-//https://en.wikipedia.org/wiki/File:Dial_up_modem_noises.ogg
-dtmf.playDTMFSequence(0, 1, [1,5,7,0,2,3,4,0,0,0,3], 0.12, 0.08);
-
+dtmf.playDialTone(0,1, 3)
+setTimeout(function(){
+	//https://en.wikipedia.org/wiki/File:Dial_up_modem_noises.ogg
+	dtmf.playDTMFSequence(0, 1, [1,5,7,0,2,3,4,0,0,0,3], 0.12, 0.08);
+}, 3000)
