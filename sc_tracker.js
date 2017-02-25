@@ -90,15 +90,24 @@ function generatePacket(haptic, highPulseMicroSec, lowPulseMicroSec, repeatCount
 	return buffer;
 }
 
+function playRange(device, haptic, note, stopNote, duration, hiRate = 1, loRate = 1, stepSize = 1) {
+	playNote(device, haptic, note, duration, hiRate, loRate);
+	
+	if (note >= stopNote) return;
+	
+	setTimeout(function(){
+		playRange(device, haptic, note + stepSize, stopNote, duration, hiRate, loRate, stepSize);
+	}, duration * 1000);
+}
+
 // From C-1 to B-8, the 95 XM notes
-//for(var i = 24; i <= 119; i++) {
+//playRange(device, 1, 24, 119, 1, 1, 7)
 // B-6 max, I've heard enough teen buzz for a lifetime.
 //for(var i = 24; i <= 95; i++) {
+playRange(device, 1, 24, 95, 1, 1, 7)
 //The controller only seems to resonate on frequencies close to A depending on the duty cycle
-for(var i = 33; i <= 69; i+=12) {
-	playNote(device, 1, i, 1, 1, 1);
-	sleep.sleep(1);
-}
+//playRange(device, 1, 33, 69, 1, 1, 7, 12)
+
 
 /*
 // Play A440
