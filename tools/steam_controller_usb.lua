@@ -73,7 +73,7 @@ end
 -- Type 0x8f : Feedback
 ------------------------------------------------------
 
-steam_controller_feedback = Proto("sc_msg_feedback",  "Steam Controller feedback message")
+steam_controller_feedback = Proto("sc_msg_feedback",  "Steam Controller feedback")
 
 hapticId = ProtoField.uint8("sc_msg_feedback.hapticId", "Selected acuator")
 hiPulseLength = ProtoField.uint16("sc_msg_feedback.hiPulseLength", "High pulse duration")
@@ -120,6 +120,34 @@ function steam_controller_feedback.dissector(msgBuffer, pinfo, tree)
 end
 
 scPacketTable:add(0x8f, steam_controller_feedback)
+
+------------------------------------------------------
+-- Type 0x81 : Disable lizard mode
+------------------------------------------------------
+
+steam_controller_lizard_off = Proto("sc_msg_lizard_off", "Steam Controller disable lizard mode")
+				
+function steam_controller_lizard_off.dissector(msgBuffer, pinfo, tree)
+	pinfo.cols.info = "DISABLE LIZARD MODE (0x81)";
+
+	return 0
+end
+
+scPacketTable:add(0x81, steam_controller_lizard_off)
+
+------------------------------------------------------
+-- Type 0x85 : Enable lizard mode
+------------------------------------------------------
+
+steam_controller_lizard_on = Proto("sc_msg_lizard_on", "Steam Controller enable lizard mode")
+				
+function steam_controller_lizard_on.dissector(msgBuffer, pinfo, tree)
+	pinfo.cols.info = "ENABLE LIZARD MODE (0x85)";
+
+	return 0
+end
+
+scPacketTable:add(0x85, steam_controller_lizard_on)
 
 ------------------------------------------------------
 
