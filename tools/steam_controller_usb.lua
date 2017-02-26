@@ -88,14 +88,26 @@ steam_controller_feedback.fields = {
 }
 				
 function steam_controller_feedback.dissector(msgBuffer, pinfo, tree)
-	pinfo.cols.protocol = "SC_feedback";
+	hapticIdBuf = msgBuffer(0,1);
+	hiPulseLengthBuf = msgBuffer(1,2);
+	loPulseLengthBuf = msgBuffer(3,2);
+	repeatCountBuf = msgBuffer(5,2);
+	
+	if hapticIdBuf:uint() == 0 then hapticName = "LEFT"
+	else hapticName = "RIGHT" end
+	
+	period = (hiPulseLengthBuf:uint() + loPulseLengthBuf:uint());
+	if period ~= 0 then state = "AT " .. math.floor(1000000.0/period) .. " Hz"
+	else state = "STOP" end
+	
+	pinfo.cols.info = "FEEDBACK (0x8f) : " .. hapticName .. " " .. state;
 	
 	subtree = tree:add(steam_controller_feedback,msgBuffer())
 	
-	subtree:add(hapticId, msgBuffer(0,1))
-	subtree:add_le(hiPulseLength, msgBuffer(1,2))
-	subtree:add_le(loPulseLength, msgBuffer(3,2))
-	subtree:add_le(repeatCount, msgBuffer(5,2))
+	subtree:add(hapticId, hapticIdBuf)
+	subtree:add_le(hiPulseLength, hiPulseLengthBuf)
+	subtree:add_le(loPulseLength, loPulseLengthBuf)
+	subtree:add_le(repeatCount, repeatCountBuf)
 	
 	local remaining = msgBuffer(7)
 	
