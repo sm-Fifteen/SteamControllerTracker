@@ -78,22 +78,23 @@ var singleton = function() {
 		return [highPulse, lowPulse]
 	}
 
-	function generateFeedbackPacket(haptic, highPulseMicroSec, lowPulseMicroSec, repeatCount) {
+	function generateFeedbackPacket(haptic, highPulseMicroSec, lowPulseMicroSec, repeatCount, nFlags = 0b0) {
 		var buffer = Buffer.alloc(64);
 		
 		var offset = 0;
 
 		offset = buffer.writeUInt8(0x8f, offset) // Feedback data packet
-		offset = buffer.writeUInt8(0x07, offset) // Length = 7 bytes
+		offset = buffer.writeUInt8(0x08, offset) // Length = 7 bytes
 		offset = buffer.writeUInt8(haptic % 2, offset) // 0x01 = left, 0x00 = right
 		offset = buffer.writeUInt16LE(highPulseMicroSec, offset)
 		offset = buffer.writeUInt16LE(lowPulseMicroSec, offset)
 		offset = buffer.writeUInt16LE(repeatCount, offset)
+		offset = buffer.writeUInt8(nFlags, offset) // "nFlags", supposedly unused
 		
 		return buffer;
 	}
 	
-	function generateLedConfigPacket(brightnessPercentage) {
+	function generateLedConfigPacket(brightnessPercentage, nFlags = 0b0) {
 		var buffer = Buffer.alloc(64);
 		
 		var offset = 0;
@@ -101,6 +102,7 @@ var singleton = function() {
 		offset = buffer.writeUInt8(0x87, offset) // Config data packet
 		offset = buffer.writeUInt8(0x03, offset) // Length = 3 bytes
 		offset = buffer.writeUInt8(0x2d, offset) // Config LED
+		offset = buffer.writeUInt8(nFlags, offset) // "nFlags", referred to as such in the Steam SDK
 		offset = buffer.writeUInt8(brightnessPercentage, offset)
 		
 		return buffer;
