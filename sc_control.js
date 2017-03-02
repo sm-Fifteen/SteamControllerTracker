@@ -50,7 +50,7 @@ var singleton = function() {
 		var haptic = channel%2;
 		
 		var dataBlob = generateFeedbackPacket(haptic, highPulse, lowPulse, repeatCount);
-
+		
 		sendBlob(device, dataBlob);
 	}
 	
@@ -61,6 +61,23 @@ var singleton = function() {
 		var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
 		
 		var dataBlob = generateLedConfigPacket(percentage);
+		sendBlob(device, dataBlob);
+	}
+	
+	function playBuiltinSound(channel, soundId) {
+		if(channel >= availableChannels()) return; // FIXME: Silently drop for now
+		var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
+		
+		var dataBlob = generatePlayBuiltinSoundPacket(soundId);
+		console.log(dataBlob)
+		sendBlob(device, dataBlob);
+	}
+	
+	function sendRawBytes(channel, rawBytes) {
+		if(channel >= availableChannels()) return;
+		var device = devices[channel>>1];
+		
+		var dataBlob = generateRawBytesPacket(rawBytes);
 		sendBlob(device, dataBlob);
 	}
 
@@ -108,12 +125,37 @@ var singleton = function() {
 		return buffer;
 	}
 	
+	function generatePlayBuiltinSoundPacket(effectId) {
+		var buffer = Buffer.alloc(64);
+		
+		var offset = 0;
+		
+		offset = buffer.writeUInt8(0xb6, offset) // Play built-in sound
+		offset = buffer.writeUInt8(0x04, offset) // Length = 4 bytes
+		offset = buffer.writeUInt8(effectId, offset)
+		
+		return buffer;
+	}
+	
+	function generateRawBytesPacket(byteArray) {
+		var buffer = Buffer.alloc(64);
+		var offset = 0;
+		
+		byteArray.forEach(function(byte) {
+			offset = buffer.writeUInt8(byte, offset)
+		})
+		
+		return buffer;
+	}
+	
 	init()
 	
 	return {
 		playFrequency: playFrequency,
 		availableChannels: availableChannels,
 		setLedBrightness: setLedBrightness,
+		playBuiltinSound: playBuiltinSound,
+		sendRawBytes: sendRawBytes,
 	}
 }()
 

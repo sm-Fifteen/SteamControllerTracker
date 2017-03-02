@@ -6,7 +6,7 @@ var control = require('./sc_control.js')
 //midi.playRange(1, 24, 119, 1, 1, 7)
 // B-6 max, I've heard enough teen buzz for a lifetime.
 //for(var i = 24; i <= 95; i++) {
-//midi.playRange(1, 24, 95, 1, 1, 7)
+//midi.playRange(1, 72, 95, 1, 1, 7)
 //The controller only seems to resonate on frequencies close to A depending on the duty cycle
 //midi.playRange(1, 33, 69, 1, 1, 7, 12)
 
@@ -29,4 +29,10 @@ setTimeout(function(){
 }, 3000)
 */
 
-control.setLedBrightness(1, 100);
+//control.setLedBrightness(1, 100);
+
+// Sounds won't play unless you send this first
+control.sendRawBytes(0, [0xc1, 0x10, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f])
+control.playBuiltinSound(0, 0x0c);
+
+
