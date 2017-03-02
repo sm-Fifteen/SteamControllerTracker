@@ -70,6 +70,27 @@ function steam_controller_packet.dissector(tvb, pinfo, tree)
 end
 
 ------------------------------------------------------
+-- Lookup table for built-in sound IDs
+------------------------------------------------------
+
+builtinSounds = {
+	[0x00] = "Warm and happy",
+	[0x01] = "Invader",
+	[0x02] = "Controller confirmed",
+	[0x03] = "Victory",
+	[0x04] = "Rise and Shine",
+	[0x05] = "Shorty",
+	[0x06] = "Warm boot",
+	[0x07] = "Next level",
+	[0x08] = "Shake it off",
+	[0x09] = "Access denied",
+	[0x0a] = "Deactivate",
+	[0x0b] = "Discovery",
+	[0x0c] = "Triumph",
+	[0x0d] = "The Mann"
+}
+
+------------------------------------------------------
 -- Type 0x8f : Feedback
 ------------------------------------------------------
 
@@ -148,6 +169,30 @@ function steam_controller_lizard_on.dissector(msgBuffer, pinfo, tree)
 end
 
 scPacketTable:add(0x85, steam_controller_lizard_on)
+
+------------------------------------------------------
+-- Type 0xB6 : Play builtin sound
+------------------------------------------------------
+
+steam_controller_play_sound = Proto("sc_msg_play_sound", "Steam Controller builtin sound")
+
+soundIdField = ProtoField.uint8("sc_msg_feedback.soundId", "Sound Id")
+
+steam_controller_feedback.fields = { soundIdField }
+
+function steam_controller_play_sound.dissector(msgBuffer, pinfo, tree)
+	soundIdBuf = msgBuffer(0,1)
+	soundId = soundIdBuf:uint()
+	
+	subtree:add(soundIdField, soundIdBuf)
+
+	local sound = builtinSounds[soundId] or "UNKNOWN";
+	pinfo.cols.info = "PLAY SOUND (0xB6): " .. sound .. " (0x" .. tostring(soundIdBuf:bytes()) ..")"
+
+	return 1
+end
+
+scPacketTable:add(0xb6, steam_controller_play_sound)
 
 ------------------------------------------------------
 
