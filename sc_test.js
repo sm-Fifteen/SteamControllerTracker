@@ -1,5 +1,6 @@
 var midi = require('./sc_midi.js')
 var dtmf = require('./sc_dtmf.js')
+var control = require('./sc_control.js')
 
 // From C-1 to B-8, the 95 XM notes
 //midi.playRange(1, 24, 119, 1, 1, 7)
@@ -20,8 +21,12 @@ sendBlob(generatePacket(1, 100, 900, 5000))
 setTimeout(function(){}, 5000);
 */
 
+/*
 dtmf.playDialTone(0,1, 3)
 setTimeout(function(){
 	//https://en.wikipedia.org/wiki/File:Dial_up_modem_noises.ogg
 	dtmf.playDTMFSequence(0, 1, [1,5,7,0,2,3,4,0,0,0,3], 0.12, 0.08);
 }, 3000)
+*/
+
+control.setLedBrightness(1, 100);

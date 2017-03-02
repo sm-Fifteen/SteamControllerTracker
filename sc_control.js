@@ -49,8 +49,18 @@ var singleton = function() {
 		var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
 		var haptic = channel%2;
 		
-		var dataBlob = generatePacket(haptic, highPulse, lowPulse, repeatCount);
+		var dataBlob = generateFeedbackPacket(haptic, highPulse, lowPulse, repeatCount);
 
+		sendBlob(device, dataBlob);
+	}
+	
+	// Channel refers to whatever controller has this channel registered,
+	// but it makes no difference which of the two channels you pick. 
+	function setLedBrightness(channel, percentage) {
+		if(channel >= availableChannels()) return; // FIXME: Silently drop for now
+		var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
+		
+		var dataBlob = generateLedConfigPacket(percentage);
 		sendBlob(device, dataBlob);
 	}
 
@@ -68,7 +78,7 @@ var singleton = function() {
 		return [highPulse, lowPulse]
 	}
 
-	function generatePacket(haptic, highPulseMicroSec, lowPulseMicroSec, repeatCount) {
+	function generateFeedbackPacket(haptic, highPulseMicroSec, lowPulseMicroSec, repeatCount) {
 		var buffer = Buffer.alloc(64);
 		
 		var offset = 0;
@@ -83,11 +93,25 @@ var singleton = function() {
 		return buffer;
 	}
 	
+	function generateLedConfigPacket(brightnessPercentage) {
+		var buffer = Buffer.alloc(64);
+		
+		var offset = 0;
+		
+		offset = buffer.writeUInt8(0x87, offset) // Config data packet
+		offset = buffer.writeUInt8(0x03, offset) // Length = 3 bytes
+		offset = buffer.writeUInt8(0x2d, offset) // Config LED
+		offset = buffer.writeUInt8(brightnessPercentage, offset)
+		
+		return buffer;
+	}
+	
 	init()
 	
 	return {
 		playFrequency: playFrequency,
 		availableChannels: availableChannels,
+		setLedBrightness: setLedBrightness,
 	}
 }()
 
