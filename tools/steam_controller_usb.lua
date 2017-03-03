@@ -32,7 +32,7 @@ end
 -- Wrapper
 ------------------------------------------------------
 
-steam_controller_packet = Proto("sc_packet",  "Steam Controller packet")
+steam_controller_packet = Proto("SC_MSG",  "Steam Controller packet")
 msgType = ProtoField.uint8("sc_packet.msgType", "Message type", base.HEX)
 msgLength = ProtoField.uint8("sc_packet.msgLength", "Message length")
 
@@ -55,9 +55,10 @@ function steam_controller_packet.dissector(tvb, pinfo, tree)
 	packetDissector = scPacketTable:get_dissector(mType:uint())
 	msgBuffer = dataBuffer(2, mLength:uint()):tvb()
 	
-	pinfo.cols.info = "MSG 0x" .. tostring(mType:bytes());
+	pinfo.cols.info = "0x" .. tostring(mType:bytes());
 	
 	if packetDissector == nil then
+		pinfo.cols.info:prepend(pinfo.curr_proto .. " ")
 		undecodedEntry = tree:add(msgBuffer(), "Unknown Steam Controller message (type:", "0x" .. tostring(mType:bytes()), ", length:", mLength:uint(),")")
 		undecodedEntry:add_expert_info(PI_UNDECODED)
 		
@@ -89,11 +90,16 @@ builtinSounds = {
 	[0x0d] = "The Mann"
 }
 
+function updatePinfo(pinfo, curr_proto)
+	pinfo.cols.info:prepend(pinfo.curr_proto .. " (")
+	pinfo.cols.info:append(")")
+end
+
 ------------------------------------------------------
 -- Type 0x8f : Feedback
 ------------------------------------------------------
 
-steam_controller_feedback = Proto("sc_msg_feedback",  "Steam Controller feedback")
+steam_controller_feedback = Proto("feedback",  "Steam Controller feedback")
 
 hapticId = ProtoField.uint8("sc_msg_feedback.hapticId", "Selected acuator")
 hiPulseLength = ProtoField.uint16("sc_msg_feedback.hiPulseLength", "High pulse duration")
@@ -106,7 +112,7 @@ steam_controller_feedback.fields = {
 	loPulseLength,
 	repeatCount
 }
-				
+
 function steam_controller_feedback.dissector(msgBuffer, pinfo, tree)
 	hapticIdBuf = msgBuffer(0,1);
 	hiPulseLengthBuf = msgBuffer(1,2);
@@ -120,7 +126,8 @@ function steam_controller_feedback.dissector(msgBuffer, pinfo, tree)
 	if period ~= 0 then state = "AT " .. math.floor(1000000.0/period) .. " Hz"
 	else state = "STOP" end
 	
-	pinfo.cols.info = "FEEDBACK (0x8f) : " .. hapticName .. " " .. state;
+	updatePinfo(pinfo)
+	pinfo.cols.info:append(": " .. hapticName .. " " .. state)
 	
 	subtree = tree:add(steam_controller_feedback,msgBuffer())
 	
@@ -145,10 +152,10 @@ scPacketTable:add(0x8f, steam_controller_feedback)
 -- Type 0x81 : Disable lizard mode
 ------------------------------------------------------
 
-steam_controller_lizard_off = Proto("sc_msg_lizard_off", "Steam Controller disable lizard mode")
+steam_controller_lizard_off = Proto("lizard_off", "Steam Controller disable lizard mode")
 				
 function steam_controller_lizard_off.dissector(msgBuffer, pinfo, tree)
-	pinfo.cols.info = "DISABLE LIZARD MODE (0x81)";
+	updatePinfo(pinfo)
 
 	return 0
 end
@@ -159,10 +166,10 @@ scPacketTable:add(0x81, steam_controller_lizard_off)
 -- Type 0x85 : Enable lizard mode
 ------------------------------------------------------
 
-steam_controller_lizard_on = Proto("sc_msg_lizard_on", "Steam Controller enable lizard mode")
+steam_controller_lizard_on = Proto("lizard_on", "Steam Controller enable lizard mode")
 				
 function steam_controller_lizard_on.dissector(msgBuffer, pinfo, tree)
-	pinfo.cols.info = "ENABLE LIZARD MODE (0x85)";
+	updatePinfo(pinfo)
 
 	return 0
 end
@@ -173,7 +180,7 @@ scPacketTable:add(0x85, steam_controller_lizard_on)
 -- Type 0xB6 : Play builtin sound
 ------------------------------------------------------
 
-steam_controller_play_sound = Proto("sc_msg_play_sound", "Steam Controller builtin sound")
+steam_controller_play_sound = Proto("play_sound", "Steam Controller builtin sound")
 
 soundIdField = ProtoField.uint8("sc_msg_feedback.soundId", "Sound Id")
 
@@ -186,7 +193,8 @@ function steam_controller_play_sound.dissector(msgBuffer, pinfo, tree)
 	subtree:add(soundIdField, soundIdBuf)
 
 	local sound = builtinSounds[soundId] or "UNKNOWN";
-	pinfo.cols.info = "PLAY SOUND (0xB6): " .. sound .. " (0x" .. tostring(soundIdBuf:bytes()) ..")"
+	updatePinfo(pinfo)
+	pinfo.cols.info:append(": " .. sound .. " (0x" .. tostring(soundIdBuf:bytes()) ..")")
 
 	return 1
 end
