@@ -4,14 +4,13 @@ require("bit")
 scPacketTable = DissectorTable.new("sc_packet.msgType", "Steam Controller Packet", ftypes.UINT8, base.HEX)
 
 ------------------------------------------------------
--- USB Control transfer heuristic (for the setup header)
+-- USB Control transfer dissector (for the setup header)
 ------------------------------------------------------
 
--- usb.control heuristics get the URB setup header minus the first byte
--- and the data inside it, exactly what the usb dissector tables get sent.
--- That a bug?
+sc_usb_setup = Proto("usb.setup",  "USB Setup header")
 
-function sc_packet_heuristic(tvb, pinfo, tree)
+
+function sc_usb_setup.dissector(tvb, pinfo, tree)
 	if tvb:len() == 0 then return false end
 	
 	--bmRequestTypeBuf = tvb(0,1)
@@ -22,12 +21,11 @@ function sc_packet_heuristic(tvb, pinfo, tree)
 	dataBuffer = tvb(7):tvb()
 	
 	if wLengthBuf:le_uint() ~= dataBuffer:len() then
-		return false
+		return 0
 	end
 	
-	-- Dissect the packet it and return true
 	sc_packet_dissector:call(dataBuffer, pinfo, tree)
-	return true
+	return 7 + dataBuffer:len();
 end
 
 ------------------------------------------------------
@@ -66,6 +64,7 @@ function steam_controller_packet.dissector(tvb, pinfo, tree)
 		return
 	end
 	
+	--PacketDissector.name : Add this to msgType
 	packetDissector:call(msgBuffer, pinfo, tree)
 end
 
@@ -197,6 +196,6 @@ scPacketTable:add(0xb6, steam_controller_play_sound)
 ------------------------------------------------------
 
 sc_packet_dissector = steam_controller_packet.dissector
-steam_controller_packet:register_heuristic("usb.control", sc_packet_heuristic)
---dTable:add(0x28de1102,steam_controller_packet) --USB controller
---dTable:add(0x28de1142,steam_controller_packet) --Dongle
+dTable = DissectorTable.get("usb.product")
+dTable:add(0x28de1102,sc_usb_setup) --USB controller
+dTable:add(0x28de1142,sc_usb_setup) --Dongle
