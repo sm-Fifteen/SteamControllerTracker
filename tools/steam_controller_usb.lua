@@ -32,10 +32,8 @@ function sc_packet()
 		local packetDissector = scPacketTable:get_dissector(mType:uint())
 		local msgBuffer = dataBuffer(2, mLength:uint()):tvb()
 		
-		pinfo.cols.info = "0x" .. tostring(mType:bytes());
-		
 		if packetDissector == nil then
-			pinfo.cols.info:prepend(pinfo.curr_proto .. " ")
+			updatePinfo(pinfo, mType:uint())
 			local undecodedEntry = tree:add(msgBuffer(), "Unknown Steam Controller message (type:", "0x" .. tostring(mType:bytes()), ", length:", mLength:uint(),")")
 			undecodedEntry:add_expert_info(PI_UNDECODED)
 			
@@ -73,9 +71,12 @@ builtinSounds = {
 	[0x0d] = "The Mann"
 }
 
-function updatePinfo(pinfo, curr_proto)
-	pinfo.cols.info:prepend(pinfo.curr_proto .. " (")
-	pinfo.cols.info:append(")")
+function updatePinfo(pinfo, msgId)
+	if (pinfo.curr_proto == "SC_MSG") then
+		pinfo.cols.info = string.format("%s 0x%x", pinfo.curr_proto, msgId)
+	else 
+		pinfo.cols.info = string.format("%s (0x%x)", pinfo.curr_proto, msgId)
+	end
 end
 
 ------------------------------------------------------
@@ -110,7 +111,7 @@ function sc_feedback(msgId)
 		if period ~= 0 then state = "AT " .. math.floor(1000000.0/period) .. " Hz"
 		else state = "STOP" end
 		
-		updatePinfo(pinfo)
+		updatePinfo(pinfo, msgId)
 		pinfo.cols.info:append(": " .. hapticName .. " " .. state)
 		
 		local subtree = tree:add(protocol,msgBuffer())
@@ -143,7 +144,7 @@ function sc_lizard_off(msgId)
 	local protocol = Proto("lizard_off", "Steam Controller disable lizard mode")
 					
 	function protocol.dissector(msgBuffer, pinfo, tree)
-		updatePinfo(pinfo)
+		updatePinfo(pinfo, msgId)
 
 		return 0
 	end
@@ -161,7 +162,7 @@ function sc_lizard_on(msgId)
 	local protocol = Proto("lizard_on", "Steam Controller enable lizard mode")
 					
 	function protocol.dissector(msgBuffer, pinfo, tree)
-		updatePinfo(pinfo)
+		updatePinfo(pinfo, msgId)
 
 		return 0
 	end
@@ -191,7 +192,7 @@ function sc_play_sound(msgId)
 		subtree:add(soundIdField, soundIdBuf)
 
 		local sound = builtinSounds[soundId] or "UNKNOWN";
-		updatePinfo(pinfo)
+		updatePinfo(pinfo, msgId)
 		pinfo.cols.info:append(": " .. sound .. " (0x" .. tostring(soundIdBuf:bytes()) ..")")
 
 		return 1
@@ -221,7 +222,7 @@ function sc_config(msgId)
 		
 		subtree:add(configTypeField, configTypeBuf)
 		
-		updatePinfo(pinfo)
+		updatePinfo(pinfo, msgId)
 		
 		local configDissector = scConfigTable:get_dissector(configType)
 		local configBuffer = msgBuffer(1):tvb()
