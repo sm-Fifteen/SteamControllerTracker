@@ -5,70 +5,52 @@ scPacketTable = DissectorTable.new("sc_packet.msgType", "Steam Controller Packet
 scConfigTable = DissectorTable.new("sc_config.configType", "Steam Controller Config", ftypes.UINT8, base.HEX)
 
 ------------------------------------------------------
--- USB Control transfer dissector (for the setup header)
-------------------------------------------------------
-
-sc_usb_setup = Proto("SC_USB_SETUP",  "USB Setup header")
-
-
-function sc_usb_setup.dissector(tvb, pinfo, tree)
-	if tvb:len() == 0 then return false end
-	
-	--bmRequestTypeBuf = tvb(0,1)
-	bRequestBuf = tvb(0,1)
-	wValueBuf = tvb(1,2)
-	wIndexBuf = tvb(3,2)
-	wLengthBuf = tvb(5,2)
-	dataBuffer = tvb(7):tvb()
-	
-	if wLengthBuf:le_uint() ~= dataBuffer:len() then
-		return 0
-	end
-	
-	sc_packet_dissector:call(dataBuffer, pinfo, tree)
-	return 7 + dataBuffer:len();
-end
-
-------------------------------------------------------
 -- Wrapper
 ------------------------------------------------------
 
-steam_controller_packet = Proto("SC_MSG",  "Steam Controller packet")
-msgType = ProtoField.uint8("sc_packet.msgType", "Message type", base.HEX)
-msgLength = ProtoField.uint8("sc_packet.msgLength", "Message length")
+function sc_packet()
+	local protocol = Proto("SC_MSG",  "Steam Controller packet")
+	local msgType = ProtoField.uint8("sc_packet.msgType", "Message type", base.HEX)
+	local msgLength = ProtoField.uint8("sc_packet.msgLength", "Message length")
 
-steam_controller_packet.fields = {
-	msgType,
-	msgLength
-}
+	protocol.fields = {
+		msgType,
+		msgLength
+	}
 
-function steam_controller_packet.dissector(tvb, pinfo, tree)
-	pinfo.cols.protocol = "sc_set_report";
-	
-	subtree = tree:add(steam_controller_packet,dataBuffer())
-	
-	mType = dataBuffer(0,1)
-	mLength = dataBuffer(1,1)
-	
-	subtree:add(msgType, mType)
-	subtree:add(msgLength, mLength)
-	
-	packetDissector = scPacketTable:get_dissector(mType:uint())
-	msgBuffer = dataBuffer(2, mLength:uint()):tvb()
-	
-	pinfo.cols.info = "0x" .. tostring(mType:bytes());
-	
-	if packetDissector == nil then
-		pinfo.cols.info:prepend(pinfo.curr_proto .. " ")
-		undecodedEntry = tree:add(msgBuffer(), "Unknown Steam Controller message (type:", "0x" .. tostring(mType:bytes()), ", length:", mLength:uint(),")")
-		undecodedEntry:add_expert_info(PI_UNDECODED)
+	function protocol.dissector(dataBuffer, pinfo, tree)
+		pinfo.cols.protocol = "sc_set_report";
 		
-		return
+		local subtree = tree:add(protocol,dataBuffer())
+		
+		local mType = dataBuffer(0,1)
+		local mLength = dataBuffer(1,1)
+		
+		subtree:add(msgType, mType)
+		subtree:add(msgLength, mLength)
+		
+		local packetDissector = scPacketTable:get_dissector(mType:uint())
+		local msgBuffer = dataBuffer(2, mLength:uint()):tvb()
+		
+		pinfo.cols.info = "0x" .. tostring(mType:bytes());
+		
+		if packetDissector == nil then
+			pinfo.cols.info:prepend(pinfo.curr_proto .. " ")
+			local undecodedEntry = tree:add(msgBuffer(), "Unknown Steam Controller message (type:", "0x" .. tostring(mType:bytes()), ", length:", mLength:uint(),")")
+			undecodedEntry:add_expert_info(PI_UNDECODED)
+			
+			return
+		end
+		
+		--PacketDissector.name : Add this to msgType
+		packetDissector:call(msgBuffer, pinfo, tree)
 	end
 	
-	--PacketDissector.name : Add this to msgType
-	packetDissector:call(msgBuffer, pinfo, tree)
+	-- Set this up so the control dissector can use it
+	sc_packet_dissector = protocol.dissector
 end
+
+sc_packet()
 
 ------------------------------------------------------
 -- Lookup table for built-in sound IDs
@@ -204,6 +186,8 @@ function sc_play_sound(msgId)
 		local soundIdBuf = msgBuffer(0,1)
 		local soundId = soundIdBuf:uint()
 		
+		local subtree = tree:add(protocol,msgBuffer())
+		
 		subtree:add(soundIdField, soundIdBuf)
 
 		local sound = builtinSounds[soundId] or "UNKNOWN";
@@ -232,6 +216,9 @@ function sc_config(msgId)
 	function protocol.dissector(msgBuffer, pinfo, tree)
 		local configTypeBuf = msgBuffer(0,1)
 		local configType = configTypeBuf:uint()
+		
+		local subtree = tree:add(protocol,msgBuffer())
+		
 		subtree:add(configTypeField, configTypeBuf)
 		
 		updatePinfo(pinfo)
@@ -271,8 +258,29 @@ sc_config(0x87)
 ------------------------------------------------------
 
 ------------------------------------------------------
+-- USB Control transfer dissector (for the setup header)
+------------------------------------------------------
 
-sc_packet_dissector = steam_controller_packet.dissector
+sc_usb_setup = Proto("SC_USB_SETUP",  "USB Setup header")
+
+function sc_usb_setup.dissector(tvb, pinfo, tree)
+	if tvb:len() == 0 then return false end
+	
+	--bmRequestTypeBuf = tvb(0,1)
+	local bRequestBuf = tvb(0,1)
+	local wValueBuf = tvb(1,2)
+	local wIndexBuf = tvb(3,2)
+	local wLengthBuf = tvb(5,2)
+	local dataBuffer = tvb(7):tvb()
+	
+	if wLengthBuf:le_uint() ~= dataBuffer:len() then
+		return 0
+	end
+	
+	sc_packet_dissector:call(dataBuffer, pinfo, tree)
+	return 7 + dataBuffer:len();
+end
+
 --Note that these only work if the device descriptors are present in the capture.
 dTable = DissectorTable.get("usb.product")
 dTable:add(0x28de1102,sc_usb_setup) --USB controller
