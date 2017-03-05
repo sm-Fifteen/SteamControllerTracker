@@ -157,86 +157,102 @@ sc_feedback(0x8f)
 -- Type 0x81 : Disable lizard mode
 ------------------------------------------------------
 
-steam_controller_lizard_off = Proto("lizard_off", "Steam Controller disable lizard mode")
-				
-function steam_controller_lizard_off.dissector(msgBuffer, pinfo, tree)
-	updatePinfo(pinfo)
+function sc_lizard_off(msgId)
+	local protocol = Proto("lizard_off", "Steam Controller disable lizard mode")
+					
+	function protocol.dissector(msgBuffer, pinfo, tree)
+		updatePinfo(pinfo)
 
-	return 0
+		return 0
+	end
+	
+	scPacketTable:add(msgId, protocol)
 end
 
-scPacketTable:add(0x81, steam_controller_lizard_off)
+sc_lizard_off(0x81)
 
 ------------------------------------------------------
 -- Type 0x85 : Enable lizard mode
 ------------------------------------------------------
 
-steam_controller_lizard_on = Proto("lizard_on", "Steam Controller enable lizard mode")
-				
-function steam_controller_lizard_on.dissector(msgBuffer, pinfo, tree)
-	updatePinfo(pinfo)
+function sc_lizard_on(msgId)
+	local protocol = Proto("lizard_on", "Steam Controller enable lizard mode")
+					
+	function protocol.dissector(msgBuffer, pinfo, tree)
+		updatePinfo(pinfo)
 
-	return 0
+		return 0
+	end
+
+	scPacketTable:add(msgId, protocol)
 end
 
-scPacketTable:add(0x85, steam_controller_lizard_on)
+sc_lizard_on(0x85)
 
 ------------------------------------------------------
 -- Type 0xB6 : Play builtin sound
 ------------------------------------------------------
 
-steam_controller_play_sound = Proto("play_sound", "Steam Controller builtin sound")
+function sc_play_sound(msgId)
+	local protocol = Proto("play_sound", "Steam Controller builtin sound")
 
-soundIdField = ProtoField.uint8("sc_msg_feedback.soundId", "Sound Id")
+	local soundIdField = ProtoField.uint8("sc_msg_feedback.soundId", "Sound Id")
 
-steam_controller_play_sound.fields = { soundIdField }
+	protocol.fields = { soundIdField }
 
-function steam_controller_play_sound.dissector(msgBuffer, pinfo, tree)
-	soundIdBuf = msgBuffer(0,1)
-	soundId = soundIdBuf:uint()
-	
-	subtree:add(soundIdField, soundIdBuf)
+	function protocol.dissector(msgBuffer, pinfo, tree)
+		local soundIdBuf = msgBuffer(0,1)
+		local soundId = soundIdBuf:uint()
+		
+		subtree:add(soundIdField, soundIdBuf)
 
-	local sound = builtinSounds[soundId] or "UNKNOWN";
-	updatePinfo(pinfo)
-	pinfo.cols.info:append(": " .. sound .. " (0x" .. tostring(soundIdBuf:bytes()) ..")")
+		local sound = builtinSounds[soundId] or "UNKNOWN";
+		updatePinfo(pinfo)
+		pinfo.cols.info:append(": " .. sound .. " (0x" .. tostring(soundIdBuf:bytes()) ..")")
 
-	return 1
+		return 1
+	end
+
+	scPacketTable:add(msgId, protocol)
 end
 
-scPacketTable:add(0xb6, steam_controller_play_sound)
+sc_play_sound(0xb6)
 
 ------------------------------------------------------
 -- Type 0x87 : Configure
 ------------------------------------------------------
 
-sc_config = Proto("config", "Steam controller configuration")
+function sc_config(msgId)
+	local protocol = Proto("config", "Steam controller configuration")
 
-configTypeField = ProtoField.uint8("sc_msg_config.configType", "Configured field ID", base.HEX)
+	local configTypeField = ProtoField.uint8("sc_msg_config.configType", "Configured field ID", base.HEX)
 
-sc_config.fields = { configTypeField }
+	protocol.fields = { configTypeField }
 
-function sc_config.dissector(msgBuffer, pinfo, tree)
-	configTypeBuf = msgBuffer(0,1)
-	configType = configTypeBuf:uint()
-	subtree:add(configTypeField, configTypeBuf)
-	
-	updatePinfo(pinfo)
-	
-	configDissector = scConfigTable:get_dissector(configType)
-	configBuffer = msgBuffer(1):tvb()
-	
-	if configDissector == nil then
-		undecodedEntry = tree:add(configBuffer(), "Steam Controller config message of unknown type")
-		undecodedEntry:add_expert_info(PI_UNDECODED)
+	function protocol.dissector(msgBuffer, pinfo, tree)
+		local configTypeBuf = msgBuffer(0,1)
+		local configType = configTypeBuf:uint()
+		subtree:add(configTypeField, configTypeBuf)
 		
-		return
+		updatePinfo(pinfo)
+		
+		local configDissector = scConfigTable:get_dissector(configType)
+		local configBuffer = msgBuffer(1):tvb()
+		
+		if configDissector == nil then
+			local undecodedEntry = tree:add(configBuffer(), "Steam Controller config message of unknown type")
+			undecodedEntry:add_expert_info(PI_UNDECODED)
+			
+			return
+		end
+		
+		configDissector:call(configBuffer, pinfo, tree)
 	end
-	
-	configDissector:call(configBuffer, pinfo, tree)
+
+	scPacketTable:add(msgId, protocol)
 end
 
-scPacketTable:add(0x87, sc_config)
+sc_config(0x87)
 
 ------------------------------------------------------
 -- Configure 0x2d : LED control
