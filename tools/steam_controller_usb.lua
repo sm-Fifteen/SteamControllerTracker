@@ -100,54 +100,58 @@ end
 -- Type 0x8f : Feedback
 ------------------------------------------------------
 
-steam_controller_feedback = Proto("feedback",  "Steam Controller feedback")
+function sc_feedback(msgId)
+	local protocol = Proto("feedback",  "Steam Controller feedback")
 
-hapticId = ProtoField.uint8("sc_msg_feedback.hapticId", "Selected acuator")
-hiPulseLength = ProtoField.uint16("sc_msg_feedback.hiPulseLength", "High pulse duration")
-loPulseLength = ProtoField.uint16("sc_msg_feedback.loPulseLength", "Low pulse duration")
-repeatCount = ProtoField.uint16("sc_msg_feedback.repeatCount", "Repetitions")
+	local hapticId = ProtoField.uint8("sc_msg_feedback.hapticId", "Selected acuator")
+	local hiPulseLength = ProtoField.uint16("sc_msg_feedback.hiPulseLength", "High pulse duration")
+	local loPulseLength = ProtoField.uint16("sc_msg_feedback.loPulseLength", "Low pulse duration")
+	local repeatCount = ProtoField.uint16("sc_msg_feedback.repeatCount", "Repetitions")
 
-steam_controller_feedback.fields = {
-	hapticId,
-	hiPulseLength,
-	loPulseLength,
-	repeatCount
-}
+	protocol.fields = {
+		hapticId,
+		hiPulseLength,
+		loPulseLength,
+		repeatCount
+	}
 
-function steam_controller_feedback.dissector(msgBuffer, pinfo, tree)
-	hapticIdBuf = msgBuffer(0,1);
-	hiPulseLengthBuf = msgBuffer(1,2);
-	loPulseLengthBuf = msgBuffer(3,2);
-	repeatCountBuf = msgBuffer(5,2);
-	
-	if hapticIdBuf:uint() == 0 then hapticName = "LEFT"
-	else hapticName = "RIGHT" end
-	
-	period = (hiPulseLengthBuf:uint() + loPulseLengthBuf:uint());
-	if period ~= 0 then state = "AT " .. math.floor(1000000.0/period) .. " Hz"
-	else state = "STOP" end
-	
-	updatePinfo(pinfo)
-	pinfo.cols.info:append(": " .. hapticName .. " " .. state)
-	
-	subtree = tree:add(steam_controller_feedback,msgBuffer())
-	
-	subtree:add(hapticId, hapticIdBuf)
-	subtree:add_le(hiPulseLength, hiPulseLengthBuf)
-	subtree:add_le(loPulseLength, loPulseLengthBuf)
-	subtree:add_le(repeatCount, repeatCountBuf)
-	
-	local remaining = msgBuffer(7)
-	
-	if remaining:len() ~= 0 then
-		local remainingEntry = subtree:add(remaining, "Unknown extra bytes:", tostring(remaining:bytes()))
-		remainingEntry:add_expert_info(PI_UNDECODED, PI_NOTE)
+	function protocol.dissector(msgBuffer, pinfo, tree)
+		local hapticIdBuf = msgBuffer(0,1);
+		local hiPulseLengthBuf = msgBuffer(1,2);
+		local loPulseLengthBuf = msgBuffer(3,2);
+		local repeatCountBuf = msgBuffer(5,2);
+		
+		if hapticIdBuf:uint() == 0 then hapticName = "LEFT"
+		else hapticName = "RIGHT" end
+		
+		period = (hiPulseLengthBuf:uint() + loPulseLengthBuf:uint());
+		if period ~= 0 then state = "AT " .. math.floor(1000000.0/period) .. " Hz"
+		else state = "STOP" end
+		
+		updatePinfo(pinfo)
+		pinfo.cols.info:append(": " .. hapticName .. " " .. state)
+		
+		local subtree = tree:add(protocol,msgBuffer())
+		
+		subtree:add(hapticId, hapticIdBuf)
+		subtree:add_le(hiPulseLength, hiPulseLengthBuf)
+		subtree:add_le(loPulseLength, loPulseLengthBuf)
+		subtree:add_le(repeatCount, repeatCountBuf)
+		
+		local remaining = msgBuffer(7)
+		
+		if remaining:len() ~= 0 then
+			local remainingEntry = subtree:add(remaining, "Unknown extra bytes:", tostring(remaining:bytes()))
+			remainingEntry:add_expert_info(PI_UNDECODED, PI_NOTE)
+		end
+		
+		return
 	end
-	
-	return mLength
+
+	scPacketTable:add(msgId, protocol)
 end
 
-scPacketTable:add(0x8f, steam_controller_feedback)
+sc_feedback(0x8f)
 
 ------------------------------------------------------
 -- Type 0x81 : Disable lizard mode
@@ -185,7 +189,7 @@ steam_controller_play_sound = Proto("play_sound", "Steam Controller builtin soun
 
 soundIdField = ProtoField.uint8("sc_msg_feedback.soundId", "Sound Id")
 
-steam_controller_feedback.fields = { soundIdField }
+steam_controller_play_sound.fields = { soundIdField }
 
 function steam_controller_play_sound.dissector(msgBuffer, pinfo, tree)
 	soundIdBuf = msgBuffer(0,1)
