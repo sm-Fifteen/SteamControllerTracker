@@ -2,6 +2,7 @@ require("bit")
 
 -- Dissector Table for steam controller control packets
 scPacketTable = DissectorTable.new("sc_packet.msgType", "Steam Controller Packet", ftypes.UINT8, base.HEX)
+scConfigTable = DissectorTable.new("sc_config.configType", "Steam Controller Config", ftypes.UINT8, base.HEX)
 
 ------------------------------------------------------
 -- USB Control transfer dissector (for the setup header)
@@ -200,6 +201,54 @@ function steam_controller_play_sound.dissector(msgBuffer, pinfo, tree)
 end
 
 scPacketTable:add(0xb6, steam_controller_play_sound)
+
+------------------------------------------------------
+-- Type 0x87 : Configure
+------------------------------------------------------
+
+sc_config = Proto("config", "Steam controller configuration")
+
+configTypeField = ProtoField.uint8("sc_msg_config.configType", "Configured field ID", base.HEX)
+
+sc_config.fields = { configTypeField }
+
+function sc_config.dissector(msgBuffer, pinfo, tree)
+	configTypeBuf = msgBuffer(0,1)
+	configType = configTypeBuf:uint()
+	subtree:add(configTypeField, configTypeBuf)
+	
+	updatePinfo(pinfo)
+	
+	configDissector = scConfigTable:get_dissector(configType)
+	configBuffer = msgBuffer(1):tvb()
+	
+	if configDissector == nil then
+		undecodedEntry = tree:add(configBuffer(), "Steam Controller config message of unknown type")
+		undecodedEntry:add_expert_info(PI_UNDECODED)
+		
+		return
+	end
+	
+	configDissector:call(configBuffer, pinfo, tree)
+end
+
+scPacketTable:add(0x87, sc_config)
+
+------------------------------------------------------
+-- Configure 0x2d : LED control
+------------------------------------------------------
+
+------------------------------------------------------
+-- Configure 0x30 : ???
+------------------------------------------------------
+
+------------------------------------------------------
+-- Configure 0x32 : ???
+------------------------------------------------------
+
+------------------------------------------------------
+-- Configure 0x3a : ???
+------------------------------------------------------
 
 ------------------------------------------------------
 
