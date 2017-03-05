@@ -7,7 +7,7 @@ scPacketTable = DissectorTable.new("sc_packet.msgType", "Steam Controller Packet
 -- USB Control transfer dissector (for the setup header)
 ------------------------------------------------------
 
-sc_usb_setup = Proto("usb.setup",  "USB Setup header")
+sc_usb_setup = Proto("SC_USB_SETUP",  "USB Setup header")
 
 
 function sc_usb_setup.dissector(tvb, pinfo, tree)
@@ -204,6 +204,7 @@ scPacketTable:add(0xb6, steam_controller_play_sound)
 ------------------------------------------------------
 
 sc_packet_dissector = steam_controller_packet.dissector
+--Note that these only work if the device descriptors are present in the capture.
 dTable = DissectorTable.get("usb.product")
 dTable:add(0x28de1102,sc_usb_setup) --USB controller
 dTable:add(0x28de1142,sc_usb_setup) --Dongle
