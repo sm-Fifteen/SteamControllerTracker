@@ -36,10 +36,10 @@ function sc_packet()
 		
 		if packetDissector == nil then
 			updatePinfo(pinfo, msgType)
-			local undecodedEntry = tree:add(msgBuffer(), "Unknown Steam Controller message (type:", string.format("0x%x", msgType), ", length:", msgLength,")")
+			local undecodedEntry = subtree:add(msgBuffer(), "Unknown Steam Controller message")
 			undecodedEntry:add_expert_info(PI_UNDECODED)
 			
-			return
+			return msgLength
 		end
 		
 		local consumedBytes = packetDissector:call(msgBuffer, pinfo, subtree)
