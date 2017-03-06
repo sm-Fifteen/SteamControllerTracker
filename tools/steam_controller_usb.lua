@@ -10,31 +10,33 @@ scConfigTable = DissectorTable.new("sc_config.configType", "Steam Controller Con
 
 function sc_packet()
 	local protocol = Proto("SC_MSG",  "Steam Controller packet")
-	local msgType = ProtoField.uint8("sc_packet.msgType", "Message type", base.HEX)
-	local msgLength = ProtoField.uint8("sc_packet.msgLength", "Message length")
+	local msgTypeField = ProtoField.uint8("sc_packet.msgType", "Message type", base.HEX)
+	local msgLengthField = ProtoField.uint8("sc_packet.msgLength", "Message length")
 
 	protocol.fields = {
-		msgType,
-		msgLength
+		msgTypeField,
+		msgLengthField
 	}
 
 	function protocol.dissector(dataBuffer, pinfo, tree)
 		pinfo.cols.protocol = "sc_set_report";
 		
-		local subtree = tree:add(protocol,dataBuffer())
+		local msgTypeBuf = dataBuffer(0,1)
+		local msgLengthBuf = dataBuffer(1,1)
+		local msgType = msgTypeBuf:uint()
+		local msgLength = msgLengthBuf:uint()
 		
-		local mType = dataBuffer(0,1)
-		local mLength = dataBuffer(1,1)
+		local subtree = tree:add(protocol,dataBuffer(0, 2 + msgLength))
 		
-		subtree:add(msgType, mType)
-		subtree:add(msgLength, mLength)
+		subtree:add(msgTypeField, msgTypeBuf)
+		subtree:add(msgLengthField, msgLengthBuf)
 		
-		local packetDissector = scPacketTable:get_dissector(mType:uint())
-		local msgBuffer = dataBuffer(2, mLength:uint()):tvb()
+		local packetDissector = scPacketTable:get_dissector(msgType)
+		local msgBuffer = dataBuffer(2, msgLength):tvb()
 		
 		if packetDissector == nil then
-			updatePinfo(pinfo, mType:uint())
-			local undecodedEntry = tree:add(msgBuffer(), "Unknown Steam Controller message (type:", "0x" .. tostring(mType:bytes()), ", length:", mLength:uint(),")")
+			updatePinfo(pinfo, msgType)
+			local undecodedEntry = tree:add(msgBuffer(), "Unknown Steam Controller message (type:", string.format("0x%x", msgType), ", length:", msgLength,")")
 			undecodedEntry:add_expert_info(PI_UNDECODED)
 			
 			return
