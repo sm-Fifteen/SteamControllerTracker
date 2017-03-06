@@ -212,24 +212,26 @@ function sc_config(msgId)
 	protocol.fields = { configTypeField }
 
 	function protocol.dissector(msgBuffer, pinfo, subtree)
-		local configTypeBuf = msgBuffer(0,1)
-		local configType = configTypeBuf:uint()
-		
-		subtree:add(configTypeField, configTypeBuf)
-		
+		-- TODO : Actual error
+		if msgBuffer:len() % 3 ~= 0 then return 0 end
 		updatePinfo(pinfo, msgId)
 		
-		local configDissector = scConfigTable:get_dissector(configType)
-		local configBuffer = msgBuffer(1):tvb()
-		
-		if configDissector == nil then
-			local undecodedEntry = subtree:add(configBuffer(), "Steam Controller config message of unknown type")
-			undecodedEntry:add_expert_info(PI_UNDECODED)
+		for i=0, msgBuffer:len()-3, 3 do
+			local configBuffer = msgBuffer(i, 3)
+			local configTypeBuf = configBuffer(0,1)
+			local configType = configTypeBuf:uint()
 			
-			return msgBuffer:len()
+			local configtree = subtree:add(protocol,configBuffer)
+			configtree:add(configTypeField, configTypeBuf)
+			
+			local configDissector = scConfigTable:get_dissector(configType)
+			
+			if configDissector == nil then
+				configtree:add_expert_info(PI_UNDECODED)
+			else
+				configDissector:call(configBuffer(1), pinfo, tree)
+			end
 		end
-		
-		configDissector:call(configBuffer, pinfo, tree)
 	end
 
 	scPacketTable:add(msgId, protocol)
