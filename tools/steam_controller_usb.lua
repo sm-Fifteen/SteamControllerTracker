@@ -40,8 +40,14 @@ function sc_packet()
 			return
 		end
 		
-		--PacketDissector.name : Add this to msgType
-		packetDissector:call(msgBuffer, pinfo, tree)
+		local consumedBytes = packetDissector:call(msgBuffer, pinfo, subtree)
+		local remaining = msgBuffer(consumedBytes)
+		
+		if remaining:len() ~= 0 then
+			local remainingEntry = subtree:add(remaining, "Unknown extra bytes:", tostring(remaining:bytes()))
+			remainingEntry:add_expert_info(PI_UNDECODED, PI_NOTE)
+		end
+		
 	end
 	
 	-- Set this up so the control dissector can use it
@@ -98,7 +104,7 @@ function sc_feedback(msgId)
 		repeatCount
 	}
 
-	function protocol.dissector(msgBuffer, pinfo, tree)
+	function protocol.dissector(msgBuffer, pinfo, subtree)
 		local hapticIdBuf = msgBuffer(0,1);
 		local hiPulseLengthBuf = msgBuffer(1,2);
 		local loPulseLengthBuf = msgBuffer(3,2);
@@ -114,21 +120,12 @@ function sc_feedback(msgId)
 		updatePinfo(pinfo, msgId)
 		pinfo.cols.info:append(": " .. hapticName .. " " .. state)
 		
-		local subtree = tree:add(protocol,msgBuffer())
-		
 		subtree:add(hapticId, hapticIdBuf)
 		subtree:add_le(hiPulseLength, hiPulseLengthBuf)
 		subtree:add_le(loPulseLength, loPulseLengthBuf)
 		subtree:add_le(repeatCount, repeatCountBuf)
 		
-		local remaining = msgBuffer(7)
-		
-		if remaining:len() ~= 0 then
-			local remainingEntry = subtree:add(remaining, "Unknown extra bytes:", tostring(remaining:bytes()))
-			remainingEntry:add_expert_info(PI_UNDECODED, PI_NOTE)
-		end
-		
-		return
+		return 7
 	end
 
 	scPacketTable:add(msgId, protocol)
@@ -143,7 +140,7 @@ sc_feedback(0x8f)
 function sc_lizard_off(msgId)
 	local protocol = Proto("lizard_off", "Steam Controller disable lizard mode")
 					
-	function protocol.dissector(msgBuffer, pinfo, tree)
+	function protocol.dissector(msgBuffer, pinfo, subtree)
 		updatePinfo(pinfo, msgId)
 
 		return 0
@@ -161,7 +158,7 @@ sc_lizard_off(0x81)
 function sc_lizard_on(msgId)
 	local protocol = Proto("lizard_on", "Steam Controller enable lizard mode")
 					
-	function protocol.dissector(msgBuffer, pinfo, tree)
+	function protocol.dissector(msgBuffer, pinfo, subtree)
 		updatePinfo(pinfo, msgId)
 
 		return 0
@@ -183,11 +180,9 @@ function sc_play_sound(msgId)
 
 	protocol.fields = { soundIdField }
 
-	function protocol.dissector(msgBuffer, pinfo, tree)
+	function protocol.dissector(msgBuffer, pinfo, subtree)
 		local soundIdBuf = msgBuffer(0,1)
 		local soundId = soundIdBuf:uint()
-		
-		local subtree = tree:add(protocol,msgBuffer())
 		
 		subtree:add(soundIdField, soundIdBuf)
 
@@ -214,11 +209,9 @@ function sc_config(msgId)
 
 	protocol.fields = { configTypeField }
 
-	function protocol.dissector(msgBuffer, pinfo, tree)
+	function protocol.dissector(msgBuffer, pinfo, subtree)
 		local configTypeBuf = msgBuffer(0,1)
 		local configType = configTypeBuf:uint()
-		
-		local subtree = tree:add(protocol,msgBuffer())
 		
 		subtree:add(configTypeField, configTypeBuf)
 		
@@ -228,10 +221,10 @@ function sc_config(msgId)
 		local configBuffer = msgBuffer(1):tvb()
 		
 		if configDissector == nil then
-			local undecodedEntry = tree:add(configBuffer(), "Steam Controller config message of unknown type")
+			local undecodedEntry = subtree:add(configBuffer(), "Steam Controller config message of unknown type")
 			undecodedEntry:add_expert_info(PI_UNDECODED)
 			
-			return
+			return msgBuffer:len()
 		end
 		
 		configDissector:call(configBuffer, pinfo, tree)
