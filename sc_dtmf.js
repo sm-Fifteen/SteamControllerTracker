@@ -1,4 +1,5 @@
 var player = require('./sc_control.js')
+var Promise = require("bluebird");
 
 function playDTMF(channel1, channel2, number, duration) {
 	console.log(number)
@@ -60,18 +61,27 @@ function playDTMF(channel1, channel2, number, duration) {
 	}
 	
 	if(freq1 && freq2) {
-		player.playFrequency(channel1, freq1, duration);
-		player.playFrequency(channel2, freq2, duration);
+		return player.playFrequency(channel1, freq1, duration)
+			.then(player.playFrequency(channel2, freq2, duration))
+	} else {
+		return Promise.reject("Invalid DTMF symbol : " + number)
 	}
+	
 }
 
 function playDTMFSequence(channel1, channel2, numberList, duration, spacing = 0) {
-	playDTMF(channel1, channel2, numberList.shift(), duration);
-	if (numberList.length == 0) return;
+	var dtmfPromise = playDTMF(channel1, channel2, numberList.shift(), duration);
+	var windowDuration = duration * 1000 + spacing * 1000
+	if (numberList.length == 0) return dtmfPromise;
 
-	setTimeout(function(){
-		playDTMFSequence(channel1, channel2, numberList, duration, spacing);
-	}, duration * 1000 + spacing * 1000);
+	return Promise.all([
+		Promise.delay(windowDuration)],
+		dtmfPromise.timeout(windowDuration).catch(function(){
+			console.error("LATE")
+		})
+	).then(function() {
+		return playDTMFSequence(channel1, channel2, numberList, duration, spacing);
+	})
 }
 
 /*

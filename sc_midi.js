@@ -16,11 +16,11 @@ var midiFrequency  = [
 ];
 
 // MIDI note number [0-127], Duration (in seconds)
-function playNote(channel, note, duration, hiRate = 1, loRate = 1) {
+function playNote(channel, note, duration, hiRate = 1, loRate = 1, nFlags = 0x0) {
 	var frequency = midiFrequency[note];
 	displayNote(note);
 	
-	player.playFrequency(channel, frequency, duration, hiRate, loRate);
+	player.playFrequency(channel, frequency, duration, hiRate, loRate, nFlags);
 }
 
 function playRange(channel, note, stopNote, duration, hiRate = 1, loRate = 1, stepSize = 1) {

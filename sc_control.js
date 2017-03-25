@@ -7,6 +7,7 @@
 // https://github.com/tessel/node-usb
 
 var usb = require('usb');
+var Promise = require("bluebird");
 
 var singleton = function() {
 	var devices = [];
@@ -29,18 +30,26 @@ var singleton = function() {
 		return 2 * devices.length;
 	}
 
-	function sendBlob(device, dataBlob, callback) {
-		device.controlTransfer( 
+	function sendBlob(device, dataBlob) {
+		var promiseControl = Promise.promisify(device.controlTransfer, {
+			context: device,
+		});
+		return promiseControl( 
 			usb.LIBUSB_REQUEST_TYPE_CLASS + usb.LIBUSB_RECIPIENT_INTERFACE, // To class interface
 			usb.LIBUSB_REQUEST_SET_CONFIGURATION,
 			0x0300, // HID Report type & ID?
 			2, // Interface number
-			dataBlob,
-			callback
-		)
+			dataBlob
+		).then(function(error) {
+			if (!error) {
+				return;
+			} else {
+				throw error;
+			}
+		})
 	}
 
-	function playFrequency(channel, frequency, duration, hiRate = 1, loRate = 1) {
+	function playFrequency(channel, frequency, duration, hiRate = 1, loRate = 1, nFlags = 0x0) {
 		var repeatCount = (duration >= 0.0) ? (duration * frequency) : 0x7FFF;
 		var [highPulse, lowPulse] = getPulseValues(frequency, hiRate, loRate);
 		
@@ -49,9 +58,21 @@ var singleton = function() {
 		var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
 		var haptic = channel%2;
 		
-		var dataBlob = generateFeedbackPacket(haptic, highPulse, lowPulse, repeatCount);
+		var dataBlob = generateFeedbackPacket(haptic, highPulse, lowPulse, repeatCount, nFlags);
 		
-		sendBlob(device, dataBlob);
+		return sendBlob(device, dataBlob);
+	}
+	
+	function playPulse(channel, usDuration, nFlags = 0x0) {
+		if(channel >= availableChannels()) return; // FIXME: Silently drop for now
+		
+		var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
+		var haptic = channel%2;
+		
+		var dataBlob = generateFeedbackPacket(haptic, usDuration, 0, 1, nFlags);
+		
+		
+		return sendBlob(device, dataBlob);
 	}
 	
 	// Channel refers to whatever controller has this channel registered,
@@ -61,7 +82,7 @@ var singleton = function() {
 		var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
 		
 		var dataBlob = generateLedConfigPacket(percentage);
-		sendBlob(device, dataBlob);
+		return sendBlob(device, dataBlob);
 	}
 	
 	function playBuiltinSound(channel, soundId) {
@@ -70,7 +91,7 @@ var singleton = function() {
 		
 		var dataBlob = generatePlayBuiltinSoundPacket(soundId);
 		console.log(dataBlob)
-		sendBlob(device, dataBlob);
+		return sendBlob(device, dataBlob);
 	}
 	
 	function sendRawBytes(channel, rawBytes) {
@@ -78,7 +99,7 @@ var singleton = function() {
 		var device = devices[channel>>1];
 		
 		var dataBlob = generateRawBytesPacket(rawBytes);
-		sendBlob(device, dataBlob);
+		return sendBlob(device, dataBlob);
 	}
 
 	function getPulseValues(frequency, hiRate = 1, loRate = 1) {
@@ -156,6 +177,7 @@ var singleton = function() {
 		setLedBrightness: setLedBrightness,
 		playBuiltinSound: playBuiltinSound,
 		sendRawBytes: sendRawBytes,
+		playPulse: playPulse,
 	}
 }()
 
