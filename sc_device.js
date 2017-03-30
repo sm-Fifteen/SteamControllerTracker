@@ -47,23 +47,16 @@ class SteamControllerDevice {
 		var device = this;
 		return Promise.all([
 			Promise.each(this.channels, function(channel) {
-				var tickData = channel.nextTickData();
-				console.log("Channel #" + channel.channelId + ":" + tickData)
-				if(tickData) {
-					return device.sendFeedback(channel, tickData);
+				var tickPacket = channel.nextTickData();
+				console.log("Channel #" + channel.channelId + ":" + tickPacket)
+				if(tickPacket) {
+					return device.sendBlob(tickPacket.generateBlob(channel.channelId, 0x1));
 				} else {
 					return Promise.resolve();
 				}
 			}),
 			Promise.delay(tickDuration)
 		])
-	}
-
-	sendFeedback(channel, feedbackData) {
-		var blobBuf = packetFactory.generateFeedbackPacket(channel.channelId,
-			feedbackData.highDuration, feedbackData.lowDuration, feedbackData.repeatCount);
-
-		return this.sendBlob(blobBuf);
 	}
 
 	sendBlob(blobBuf) {

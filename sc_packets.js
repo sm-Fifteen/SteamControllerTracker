@@ -1,15 +1,47 @@
-function playFrequency(channel, frequency, duration, hiRate = 1, loRate = 1, nFlags = 0x0) {
-	var repeatCount = (duration >= 0.0) ? (duration * frequency) : 0x7FFF;
-	var [highPulse, lowPulse] = getPulseValues(frequency, hiRate, loRate);
+class FeedbackPacket {
+	constructor(highPulseMicroSec, lowPulseMicroSec, repeatCount) {
+		this.highPulseMicroSec = highPulseMicroSec;
+		this.lowPulseMicroSec = lowPulseMicroSec;
+		this.repeatCount = repeatCount;
+	}
 
-	if(channel >= availableChannels()) return; // FIXME: Silently drop for now
+	static createFromFrequency(frequency, duration, hiRate = 1, loRate = 1) {
+		var repeatCount = (duration >= 0.0) ? (duration * frequency) : 0x7FFF;
+		var [highPulse, lowPulse] = FeedbackPacket.getPulseValues(frequency, hiRate, loRate);
 
-	var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
-	var haptic = channel%2;
+		return new FeedbackPacket(highPulse, lowPulse, repeatCount);
+	}
 
-	var dataBlob = generateFeedbackPacket(haptic, highPulse, lowPulse, repeatCount, nFlags);
+	// Channel and priority are only decided here
+	generateBlob(haptic, priority) {
+		var buffer = Buffer.alloc(64);
 
-	return sendBlob(device, dataBlob);
+		var offset = 0;
+
+		offset = buffer.writeUInt8(0x8f, offset) // Feedback data packet
+		offset = buffer.writeUInt8(0x08, offset) // Length = 7 bytes
+		offset = buffer.writeUInt8(haptic % 2, offset) // 0x01 = left, 0x00 = right
+		offset = buffer.writeUInt16LE(this.highPulseMicroSec, offset)
+		offset = buffer.writeUInt16LE(this.lowPulseMicroSec, offset)
+		offset = buffer.writeUInt16LE(this.repeatCount, offset)
+		offset = buffer.writeUInt8(priority, offset)
+
+		return buffer;
+	}
+
+	static getPulseValues(frequency, hiRate = 1, loRate = 1) {
+		var SCPeriodRatio = 2 * 495483; // Value from the SC signer
+		//var SCPeriodRatio = 1000000; // 1 million microseconds
+
+		var hiPulseNum = hiRate * SCPeriodRatio;
+		var loPulseNum = loRate * SCPeriodRatio;
+		var dutyCycleDenum = frequency * (hiRate + loRate);
+
+		var highPulse = hiPulseNum/dutyCycleDenum;
+		var lowPulse = loPulseNum/dutyCycleDenum;
+
+		return [highPulse, lowPulse]
+	}
 }
 
 function playPulse(channel, usDuration, nFlags = 0x0) {
@@ -51,35 +83,7 @@ function sendRawBytes(channel, rawBytes) {
 	return sendBlob(device, dataBlob);
 }
 
-function getPulseValues(frequency, hiRate = 1, loRate = 1) {
-	var SCPeriodRatio = 2 * 495483; // Value from the SC signer
-	//var SCPeriodRatio = 1000000; // 1 million microseconds
 
-	var hiPulseNum = hiRate * SCPeriodRatio;
-	var loPulseNum = loRate * SCPeriodRatio;
-	var dutyCycleDenum = frequency * (hiRate + loRate);
-
-	var highPulse = hiPulseNum/dutyCycleDenum;
-	var lowPulse = loPulseNum/dutyCycleDenum;
-
-	return [highPulse, lowPulse]
-}
-
-function generateFeedbackPacket(haptic, highPulseMicroSec, lowPulseMicroSec, repeatCount, nFlags = 0b0) {
-	var buffer = Buffer.alloc(64);
-
-	var offset = 0;
-
-	offset = buffer.writeUInt8(0x8f, offset) // Feedback data packet
-	offset = buffer.writeUInt8(0x08, offset) // Length = 7 bytes
-	offset = buffer.writeUInt8(haptic % 2, offset) // 0x01 = left, 0x00 = right
-	offset = buffer.writeUInt16LE(highPulseMicroSec, offset)
-	offset = buffer.writeUInt16LE(lowPulseMicroSec, offset)
-	offset = buffer.writeUInt16LE(repeatCount, offset)
-	offset = buffer.writeUInt8(nFlags, offset) // "nFlags", supposedly unused
-
-	return buffer;
-}
 
 function generateLedConfigPacket(brightnessPercentage, nFlags = 0b0) {
 	var buffer = Buffer.alloc(64);
@@ -119,10 +123,9 @@ function generateRawBytesPacket(byteArray) {
 }
 
 module.exports = {
-	playFrequency: playFrequency,
 	setLedBrightness: setLedBrightness,
 	playBuiltinSound: playBuiltinSound,
 	sendRawBytes: sendRawBytes,
 	playPulse: playPulse,
-	generateFeedbackPacket: generateFeedbackPacket,
+	FeedbackPacket: FeedbackPacket
 }

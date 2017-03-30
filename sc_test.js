@@ -1,7 +1,7 @@
 var midi = require('./sc_midi.js')
 var dtmf = require('./sc_dtmf.js')
 var control = require('./sc_control.js')
-var {ChannelRoutine, RawFeedback} = require("./sc_routine.js");
+var {ChannelRoutine, RawFeedback, ConstantFrequency} = require("./sc_routine.js");
 
 // From C-1 to B-8, the 95 XM notes
 //midi.playRange(1, 24, 119, 1, 1, 7)
@@ -40,9 +40,14 @@ var device = control.devices[0];
 
 device.channels[0].routine = new RawFeedback(33333,22222,34464);
 device.nextTick(1000).then(function(){
-	device.channels[0].routine = new RawFeedback(16129,10752,34464);
+	device.channels[0].routine = new ConstantFrequency(50);
 	return device.nextTick(1000);
 }).then(function(){
 	device.channels[0].routine = new RawFeedback(0,0,0);
 	return device.nextTick(1000);
+}).catch(function(e){
+	device.channels[0].routine = new RawFeedback(0,0,0)
+	device.channels[1].routine = new RawFeedback(0,0,0)
+	device.nextTick(0);
+	throw e;
 })

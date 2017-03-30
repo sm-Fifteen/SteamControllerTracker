@@ -19,30 +19,6 @@ var singleton = function() {
 		devices.push(new SteamControllerDevice(device));
 	}
 
-	function availableChannels() {
-		//Presuming we've got exactly 2 channels per device
-		return 2 * devices.length;
-	}
-
-	function sendBlob(device, dataBlob) {
-		var promiseControl = Promise.promisify(device.controlTransfer, {
-			context: device,
-		});
-		return promiseControl(
-			usb.LIBUSB_REQUEST_TYPE_CLASS + usb.LIBUSB_RECIPIENT_INTERFACE, // To class interface
-			usb.LIBUSB_REQUEST_SET_CONFIGURATION,
-			0x0300, // HID Report type & ID?
-			2, // Interface number
-			dataBlob
-		).then(function(error) {
-			if (!error) {
-				return;
-			} else {
-				throw error;
-			}
-		})
-	}
-
 	init()
 
 	return {
