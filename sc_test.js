@@ -39,12 +39,12 @@ setTimeout(function(){
 var device = control.devices[0];
 
 device.channels[0].routine = new RawFeedback(33333,22222,34464);
-device.nextTick(1000).then(function(){
+device.nextTick(200).then(function(){
 	device.channels[0].routine = new ConstantFrequency(50);
-	return device.nextTick(1000);
+	return device.nextTick(200);
 }).then(function(){
 	device.channels[0].routine = new RawFeedback(0,0,0);
-	return device.nextTick(1000);
+	return device.nextTick(200);
 }).catch(function(e){
 	device.channels[0].routine = new RawFeedback(0,0,0)
 	device.channels[1].routine = new RawFeedback(0,0,0)

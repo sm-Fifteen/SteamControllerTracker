@@ -44,88 +44,44 @@ class FeedbackPacket {
 	}
 }
 
-function playPulse(channel, usDuration, nFlags = 0x0) {
-	if(channel >= availableChannels()) return; // FIXME: Silently drop for now
+class LedConfigPacket {
+	constructor(brightness, nFlags = 0x0) {
+		this.brightness = brightness;
+	}
 
-	var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
-	var haptic = channel%2;
+	generateBlob() {
+		var buffer = Buffer.alloc(64);
 
-	var dataBlob = generateFeedbackPacket(haptic, usDuration, 0, 1, nFlags);
+		var offset = 0;
 
+		offset = buffer.writeUInt8(0x87, offset) // Config data packet
+		offset = buffer.writeUInt8(0x03, offset) // Length = 3 bytes
+		offset = buffer.writeUInt8(0x2d, offset) // Config LED
+		offset = buffer.writeUInt8(this.brightness, offset)
+		offset = buffer.writeUInt8(nFlags, offset) // "nFlags", referred to as such in the Steam SDK
 
-	return sendBlob(device, dataBlob);
+		return buffer;
+	}
 }
 
-// Channel refers to whatever controller has this channel registered,
-// but it makes no difference which of the two channels you pick.
-function setLedBrightness(channel, percentage) {
-	if(channel >= availableChannels()) return; // FIXME: Silently drop for now
-	var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
+class BuiltinSoundPacket {
+	constructor(soundId) {
+		this.soundId = soundId;
+	}
 
-	var dataBlob = generateLedConfigPacket(percentage);
-	return sendBlob(device, dataBlob);
+	generateBlob() {
+		var buffer = Buffer.alloc(64);
+
+		var offset = 0;
+
+		offset = buffer.writeUInt8(0xb6, offset) // Play built-in sound
+		offset = buffer.writeUInt8(0x04, offset) // Length = 4 bytes
+		offset = buffer.writeUInt8(this.soundId, offset)
+
+		return buffer;
+	}
 }
 
-function playBuiltinSound(channel, soundId) {
-	if(channel >= availableChannels()) return; // FIXME: Silently drop for now
-	var device = devices[channel>>1]; //Presuming we've got exactly 2 channels per device
-
-	var dataBlob = generatePlayBuiltinSoundPacket(soundId);
-	console.log(dataBlob)
-	return sendBlob(device, dataBlob);
-}
-
-function sendRawBytes(channel, rawBytes) {
-	if(channel >= availableChannels()) return;
-	var device = devices[channel>>1];
-
-	var dataBlob = generateRawBytesPacket(rawBytes);
-	return sendBlob(device, dataBlob);
-}
-
-
-
-function generateLedConfigPacket(brightnessPercentage, nFlags = 0b0) {
-	var buffer = Buffer.alloc(64);
-
-	var offset = 0;
-
-	offset = buffer.writeUInt8(0x87, offset) // Config data packet
-	offset = buffer.writeUInt8(0x03, offset) // Length = 3 bytes
-	offset = buffer.writeUInt8(0x2d, offset) // Config LED
-	offset = buffer.writeUInt8(nFlags, offset) // "nFlags", referred to as such in the Steam SDK
-	offset = buffer.writeUInt8(brightnessPercentage, offset)
-
-	return buffer;
-}
-
-function generatePlayBuiltinSoundPacket(effectId) {
-	var buffer = Buffer.alloc(64);
-
-	var offset = 0;
-
-	offset = buffer.writeUInt8(0xb6, offset) // Play built-in sound
-	offset = buffer.writeUInt8(0x04, offset) // Length = 4 bytes
-	offset = buffer.writeUInt8(effectId, offset)
-
-	return buffer;
-}
-
-function generateRawBytesPacket(byteArray) {
-	var buffer = Buffer.alloc(64);
-	var offset = 0;
-
-	byteArray.forEach(function(byte) {
-		offset = buffer.writeUInt8(byte, offset)
-	})
-
-	return buffer;
-}
-
-module.exports = {
-	setLedBrightness: setLedBrightness,
-	playBuiltinSound: playBuiltinSound,
-	sendRawBytes: sendRawBytes,
-	playPulse: playPulse,
-	FeedbackPacket: FeedbackPacket
-}
+module.exports.FeedbackPacket = FeedbackPacket;
+module.exports.LedConfigPacket = LedConfigPacket;
+module.exports.BuiltinSoundPacket = BuiltinSoundPacket;

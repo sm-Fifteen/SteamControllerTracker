@@ -1,4 +1,9 @@
-var FeedbackPacket = require('./sc_packets.js').FeedbackPacket;
+var {FeedbackPacket} = require('./sc_packets.js');
+
+/**
+ * Routines are just abstractions of something the channel can keep doing until
+ * we tell it to do something else.
+ */
 
 class ChannelRoutine {
 	constructor() {
@@ -39,8 +44,3 @@ class ConstantFrequency extends ChannelRoutine {
 module.exports.ChannelRoutine = ChannelRoutine;
 module.exports.RawFeedback = RawFeedback;
 module.exports.ConstantFrequency = ConstantFrequency;
-
-// Also add "SimpleTone", which only takes high and low duration and a tone duration
-// Using routines, complex patterns can "keep happening" until we stop.
-
-// How to make concurrency go away for all the channels here?

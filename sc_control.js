@@ -8,7 +8,7 @@
 
 var usb = require('usb');
 var Promise = require("bluebird");
-var SteamControllerDevice = require("./sc_device.js").SteamControllerDevice
+var {SteamControllerDevice} = require("./sc_device.js")
 
 var singleton = function() {
 	var devices = [];
