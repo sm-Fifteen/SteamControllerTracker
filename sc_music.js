@@ -1,4 +1,3 @@
-var player = require('./sc_control.js')
 
 // All 127 midi frequencies, taken from pilatomic's Steam Controller Signer
 var midiFrequency  = [
@@ -15,22 +14,9 @@ var midiFrequency  = [
 	8372.02, 8869.84, 9397.27, 9956.06, 10548.1, 11175.3, 11839.8, 12543.9
 ];
 
-// MIDI note number [0-127], Duration (in seconds)
-function playNote(channel, note, duration, hiRate = 1, loRate = 1, nFlags = 0x0) {
-	var frequency = midiFrequency[note];
-	displayNote(note);
-
-	player.playFrequency(channel, frequency, duration, hiRate, loRate, nFlags);
-}
-
-function playRange(channel, note, stopNote, duration, hiRate = 1, loRate = 1, stepSize = 1) {
-	playNote(channel, note, duration, hiRate, loRate);
-
-	if (note >= stopNote) return;
-
-	setTimeout(function(){
-		playRange(channel, note + stepSize, stopNote, duration, hiRate, loRate, stepSize);
-	}, duration * 1000);
+// MIDI note number [0-127]
+function getMidiFreqency(note) {
+	return midiFrequency[note];
 }
 
 function displayNote(note) {
@@ -45,6 +31,5 @@ function displayNote(note) {
 }
 
 module.exports = {
-	playNote: playNote,
-	playRange: playRange,
+	getMidiFreqency: getMidiFreqency,
 }

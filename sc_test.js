@@ -1,7 +1,7 @@
-var midi = require('./sc_midi.js')
+var midi = require('./sc_music.js')
 var dtmf = require('./sc_dtmf.js')
 var control = require('./sc_control.js')
-var {ChannelRoutine, RawFeedback, ConstantFrequency} = require("./sc_routine.js");
+var {ChannelRoutine, RawFeedback, ConstantFrequency, ArpeggioNote} = require("./sc_routine.js");
 
 // From C-1 to B-8, the 95 XM notes
 //midi.playRange(1, 24, 119, 1, 1, 7)
@@ -36,18 +36,42 @@ setTimeout(function(){
 //control.sendRawBytes(0, [0xc1, 0x10, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f])
 //control.playBuiltinSound(0, 0x00);
 
-var device = control.devices[0];
+function sequentialPlayTest() {
+	var device = control.devices[0];
 
-device.channels[0].routine = new RawFeedback(33333,22222,34464);
-device.nextTick(200).then(function(){
-	device.channels[0].routine = new ConstantFrequency(50);
-	return device.nextTick(200);
-}).then(function(){
-	device.channels[0].routine = new RawFeedback(0,0,0);
-	return device.nextTick(200);
-}).catch(function(e){
-	device.channels[0].routine = new RawFeedback(0,0,0)
-	device.channels[1].routine = new RawFeedback(0,0,0)
-	device.nextTick(0);
-	throw e;
-})
+	device.channels[0].routine = new RawFeedback(33333,22222,34464);
+	device.nextTick(200).then(function(){
+		device.channels[0].routine = new ConstantFrequency(50);
+		return device.nextTick(200);
+	}).then(function(){
+		device.channels[0].routine = new RawFeedback(0,0,0);
+		return device.nextTick(200);
+	}).catch(function(e){
+		device.channels[0].routine = new RawFeedback(0,0,0)
+		device.channels[1].routine = new RawFeedback(0,0,0)
+		device.nextTick(0);
+		throw e;
+	})
+}
+
+function arpeggioTest() {
+	var tickDuration = 20 // 2500ms / 150BPM
+	var device = control.devices[0];
+
+	// Major chord
+	device.channels[0].routine = new ArpeggioNote(81,4,7);
+	// Minor chord
+	// device.channels[0].routine = new ArpeggioNote(81,3,7);
+	device.nextTick(tickDuration).then(function(){
+		return device.nextTick(tickDuration);
+	}).then(function(){
+		return device.nextTick(tickDuration);
+	}).then(function(){
+		return device.nextTick(tickDuration);
+	}).then(function(){
+		device.channels[0].routine = new RawFeedback(0,0,0);
+		return device.nextTick(tickDuration);
+	})
+}
+
+arpeggioTest();

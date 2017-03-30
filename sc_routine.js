@@ -1,4 +1,5 @@
 var {FeedbackPacket} = require('./sc_packets.js');
+var music = require('./sc_music.js')
 
 /**
  * Routines are just abstractions of something the channel can keep doing until
@@ -22,7 +23,7 @@ class RawFeedback extends ChannelRoutine {
 	}
 
 	nextTickFn() {
-		if(this.ticksSinceStart === 0) {
+		if(this.ticksSinceStart++ === 0) {
 			return this.feedbackPacket;
 		}
 	}
@@ -35,12 +36,36 @@ class ConstantFrequency extends ChannelRoutine {
 	}
 
 	nextTickFn() {
-		if(this.ticksSinceStart === 0) {
+		if(this.ticksSinceStart++ === 0) {
 			return this.feedbackPacket;
 		}
+	}
+}
+
+class FlatNote extends ConstantFrequency {
+	constructor(midiNote, hiRate = 1, loRate = 1) {
+		super(music.getMidiFreqency(midiNote), hiRate, loRate)
+	}
+}
+
+class ArpeggioNote extends ChannelRoutine {
+	constructor(midiNote, x, y, hiRate = 1, loRate = 1) {
+		super();
+		this.notePackets = [
+			FeedbackPacket.createFromFrequency(music.getMidiFreqency(midiNote), hiRate, loRate),
+			FeedbackPacket.createFromFrequency(music.getMidiFreqency(midiNote + x), hiRate, loRate),
+			FeedbackPacket.createFromFrequency(music.getMidiFreqency(midiNote + y), hiRate, loRate),
+		];
+	}
+
+	nextTickFn() {
+		var idx = this.ticksSinceStart % 3;
+		this.ticksSinceStart++;
+		return this.notePackets[idx];
 	}
 }
 
 module.exports.ChannelRoutine = ChannelRoutine;
 module.exports.RawFeedback = RawFeedback;
 module.exports.ConstantFrequency = ConstantFrequency;
+module.exports.ArpeggioNote = ArpeggioNote;
