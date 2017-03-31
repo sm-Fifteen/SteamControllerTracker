@@ -43,14 +43,10 @@ function sequentialPlayTest() {
 	device.nextTick(200).then(function(){
 		device.channels[0].routine = new ConstantFrequency(50);
 		return device.nextTick(200);
-	}).then(function(){
-		device.channels[0].routine = new RawFeedback(0,0,0);
-		return device.nextTick(200);
-	}).catch(function(e){
+	}).finally(function(){
 		device.channels[0].routine = new RawFeedback(0,0,0)
 		device.channels[1].routine = new RawFeedback(0,0,0)
 		device.nextTick(0);
-		throw e;
 	})
 }
 
@@ -68,9 +64,9 @@ function arpeggioTest() {
 		return device.nextTick(tickDuration);
 	}).then(function(){
 		return device.nextTick(tickDuration);
-	}).then(function(){
+	}).finally(function(){
 		device.channels[0].routine = new RawFeedback(0,0,0);
-		return device.nextTick(tickDuration);
+		return device.nextTick(0);
 	})
 }
 
