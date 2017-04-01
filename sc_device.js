@@ -48,8 +48,9 @@ class SteamControllerDevice {
 		return Promise.all([
 			Promise.each(this.channels, function(channel) {
 				var tickPacket = channel.nextTickData();
-				console.log("Channel #" + channel.channelId + ":" + tickPacket)
+
 				if(tickPacket) {
+					console.log("Channel #" + channel.channelId + ":" + JSON.stringify(channel.currentRoutine))
 					return device.sendBlob(tickPacket.generateBlob(channel.channelId, 0x1));
 				} else {
 					return Promise.resolve();

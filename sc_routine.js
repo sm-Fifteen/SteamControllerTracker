@@ -29,6 +29,12 @@ class RawFeedback extends ChannelRoutine {
 	}
 }
 
+class StopRoutine extends RawFeedback{
+	constructor() {
+		super(0,0,0);
+	}
+}
+
 class ConstantFrequency extends ChannelRoutine {
 	constructor(frequency, hiRate = 1, loRate = 1) {
 		super();
@@ -66,6 +72,7 @@ class ArpeggioNote extends ChannelRoutine {
 }
 
 module.exports.ChannelRoutine = ChannelRoutine;
+module.exports.StopRoutine = StopRoutine;
 module.exports.RawFeedback = RawFeedback;
 module.exports.ConstantFrequency = ConstantFrequency;
 module.exports.ArpeggioNote = ArpeggioNote;

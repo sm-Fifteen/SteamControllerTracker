@@ -1,7 +1,8 @@
 var midi = require('./sc_music.js')
 var dtmf = require('./sc_dtmf.js')
-var control = require('./sc_control.js')
+//var control = require('./sc_control.js')
 var {ChannelRoutine, RawFeedback, ConstantFrequency, ArpeggioNote} = require("./sc_routine.js");
+var {SteamControllerSequence, SteamControllerPlayer} = require("./sc_player.js");
 
 // From C-1 to B-8, the 95 XM notes
 //midi.playRange(1, 24, 119, 1, 1, 7)
@@ -70,4 +71,13 @@ function arpeggioTest() {
 	})
 }
 
-arpeggioTest();
+function playerTest() {
+	var sequence = new SteamControllerSequence();
+	var channels = SteamControllerPlayer.channels;
+	sequence.add(0, channels[0], new ArpeggioNote(81,3,7));
+	sequence.add(16, channels[0], new ArpeggioNote(81,4,7));
+	var sequencePromise = SteamControllerPlayer.playSequence(sequence, 20, 2, 3);
+	SteamControllerPlayer.devices[0].nextTick(0).then(sequencePromise);
+}
+
+playerTest();
