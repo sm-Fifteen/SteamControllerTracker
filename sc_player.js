@@ -20,48 +20,50 @@ class SteamControllerPlayer {
 	}
 
 	playSequence(sequence, beatsPerMinute, linesPerBeat, ticksPerLine) {
-		var timer = new SequenceTimer(sequence, beatsPerMinute, linesPerBeat, ticksPerLine);
+		var timer = new SequenceTimer(sequence, this.nextTick.bind(this), beatsPerMinute, linesPerBeat, ticksPerLine);
 
 		var startPromise = Promise.bind(this, timer);
-		return startPromise.then(this.playAtTime);
+
+		return startPromise.then(this.playTick(timer));
+	}
+
+	playTick(timer) {
+		var promise = SequenceTimer.playTick(timer);
+		if(!timer.time.finished){
+			return promise.bind(this).then(this.playTick);
+		}
+		return promise;
 	}
 
 	nextTick(tickDuration) {
-		return Promise.each(_.map(this.devices, function(device){
-			return device.nextTick(tickDuration);
-		}));
-	}
-
-	playAtTime(timer) {
-		var time = timer.time;
-		var player = this;
-		console.log(this)
-
-		time.channelUpdates.forEach(function(channelUpdate){
-			console.log("Channel update")
-			channelUpdate.channel.routine = channelUpdate.routine;
-		})
-
-		var promise = player.nextTick(time.tickDuration);
-
-		if(!time.finished){
-			timer.tick();
-			promise = promise.then(player.playAtTime);
-		}
-
-		return promise;
+		return this.devices[0].nextTick(tickDuration)
 	}
 }
 
 class SequenceTimer {
-	constructor(sequence, beatsPerMinute, linesPerBeat, ticksPerLine){
+	constructor(sequence, tickerFn, beatsPerMinute, linesPerBeat, ticksPerLine){
 		this._beatsPerMinute = beatsPerMinute;
 		this._linesPerBeat = linesPerBeat;
 		this._ticksPerLine = ticksPerLine;
 		this.refreshTickDuration();
 		this.sequence = sequence;
+		this.tickerFn = tickerFn;
 		this.tickCount = 0;
 		this.lineCount = 0;
+	}
+
+	static playTick(timer) {
+		timer.time.channelUpdates.forEach(function(channelUpdate){
+			channelUpdate.channel.routine = channelUpdate.routine;
+		})
+
+		console.log(timer.time)
+
+		return timer.tickerFn(timer.time.duration).then(function(){
+			// TickerFn does not return the timer
+			timer.tick();
+			return timer;
+		});
 	}
 
 	tick() {
@@ -74,11 +76,11 @@ class SequenceTimer {
 
 	get time() {
 		return {
-			duration: this.tickDuration,
+			duration: this.duration,
 			line: this.lineCount,
 			tick: this.tickCount,
 			channelUpdates: this.sequence.atLine(this.lineCount, this.tickCount),
-			finished: (this.sequence.lastLine <= this.lineCount +1)
+			finished: (this.sequence.lastLine < this.lineCount)
 		}
 	}
 
@@ -111,7 +113,7 @@ class SequenceTimer {
 
 	refreshTickDuration() {
 		// Tick duration in milliseconds
-		this.tickDuration = 60000/(this._beatsPerMinute*this._linesPerBeat*this._ticksPerLine);
+		this.duration = 60000/(this._beatsPerMinute*this._linesPerBeat*this._ticksPerLine);
 	}
 }
 
