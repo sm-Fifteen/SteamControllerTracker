@@ -75,4 +75,5 @@ module.exports.ChannelRoutine = ChannelRoutine;
 module.exports.StopRoutine = StopRoutine;
 module.exports.RawFeedback = RawFeedback;
 module.exports.ConstantFrequency = ConstantFrequency;
+module.exports.FlatNote = FlatNote;
 module.exports.ArpeggioNote = ArpeggioNote;
