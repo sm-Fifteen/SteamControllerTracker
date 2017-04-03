@@ -1,11 +1,10 @@
-var player = require('./sc_control.js')
 
 // All 127 midi frequencies, taken from pilatomic's Steam Controller Signer
 var midiFrequency  = [
 	8.1758,  8.66196, 9.17702, 9.72272, 10.3009, 10.9134, 11.5623, 12.2499, 12.9783, 13.75, 14.5676, 15.4339,
 	16.3516, 17.3239, 18.354,  19.4454, 20.6017, 21.8268, 23.1247, 24.4997, 25.9565, 27.5,  29.1352, 30.8677,
-	32.7032, 34.6478, 36.7081, 38.8909, 41.2034, 43.6535, 46.2493, 48.9994, 51.9131, 55,    58.2705, 61.7354, 
-	65.4064, 69.2957, 73.4162, 77.7817, 82.4069, 87.3071, 92.4986, 97.9989, 103.826, 110,   116.541, 123.471, 
+	32.7032, 34.6478, 36.7081, 38.8909, 41.2034, 43.6535, 46.2493, 48.9994, 51.9131, 55,    58.2705, 61.7354,
+	65.4064, 69.2957, 73.4162, 77.7817, 82.4069, 87.3071, 92.4986, 97.9989, 103.826, 110,   116.541, 123.471,
 	130.813, 138.591, 146.832, 155.563, 164.814, 174.614, 184.997, 195.998, 207.652, 220,   233.082, 246.942,
 	261.626, 277.183, 293.665, 311.127, 329.628, 349.228, 369.994, 391.995, 415.305, 440,   466.164, 493.883,
 	523.251, 554.365, 587.33,  622.254, 659.255, 698.456, 739.989, 783.991, 830.609, 880,   932.328, 987.767,
@@ -15,28 +14,15 @@ var midiFrequency  = [
 	8372.02, 8869.84, 9397.27, 9956.06, 10548.1, 11175.3, 11839.8, 12543.9
 ];
 
-// MIDI note number [0-127], Duration (in seconds)
-function playNote(channel, note, duration, hiRate = 1, loRate = 1) {
-	var frequency = midiFrequency[note];
-	displayNote(note);
-	
-	player.playFrequency(channel, frequency, duration, hiRate, loRate);
-}
-
-function playRange(channel, note, stopNote, duration, hiRate = 1, loRate = 1, stepSize = 1) {
-	playNote(channel, note, duration, hiRate, loRate);
-	
-	if (note >= stopNote) return;
-	
-	setTimeout(function(){
-		playRange(channel, note + stepSize, stopNote, duration, hiRate, loRate, stepSize);
-	}, duration * 1000);
+// MIDI note number [0-127]
+function getMidiFreqency(note) {
+	return midiFrequency[note];
 }
 
 function displayNote(note) {
 	const noteBaseNameArray = [" C","C#"," D","D#"," E"," F","F#"," G","G#"," A","A#"," B"];
 	var frequency = midiFrequency[note];
-	
+
 	console.log(
 		noteBaseNameArray[note % 12] +
 		Math.floor((note/12) -1) +
@@ -45,6 +31,5 @@ function displayNote(note) {
 }
 
 module.exports = {
-	playNote: playNote,
-	playRange: playRange,
+	getMidiFreqency: getMidiFreqency,
 }
