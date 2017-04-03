@@ -1,12 +1,11 @@
 {
   "name": "steam-controller-tracker",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "An offshot of the SteamControllerSigner that aims to take advantage of the SC's dual pulse channel nature",
   "main": "sc_test.js",
   "dependencies": {
     "bluebird": "^3.5.0",
     "lodash": "^4.17.4",
-    "midifile": "^1.0.4",
     "usb": "^1.2.0"
   },
   "devDependencies": {},
