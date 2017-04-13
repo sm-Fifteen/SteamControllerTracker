@@ -1,3 +1,4 @@
+var {ConstantFrequency, LoopingPattern} = require("./sc_routine.js");
 
 // All 127 midi frequencies, taken from pilatomic's Steam Controller Signer
 var midiFrequency  = [
@@ -30,6 +31,21 @@ function displayNote(note) {
 	);
 }
 
-module.exports = {
-	getMidiFreqency: getMidiFreqency,
+class FlatNote extends ConstantFrequency {
+	constructor(midiNote, hiRate = 1, loRate = 1) {
+		super(getMidiFreqency(midiNote), hiRate, loRate)
+	}
 }
+
+class ArpeggioNote extends LoopingPattern {
+	constructor(midiNote, x, y, hiRate = 1, loRate = 1) {
+		super([
+			getMidiFreqency(midiNote),
+			getMidiFreqency(midiNote + x),
+			getMidiFreqency(midiNote + y),
+		], hiRate, loRate);
+	}
+}
+
+module.exports.FlatNote = FlatNote;
+module.exports.ArpeggioNote = ArpeggioNote;

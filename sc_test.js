@@ -1,4 +1,5 @@
-var {ChannelRoutine, RawFeedback, ConstantFrequency, ArpeggioNote, FlatNote, StopRoutine} = require("./sc_routine.js");
+var {StopRoutine} = require("./sc_routine.js");
+var {ArpeggioNote, FlatNote} = require("./sc_music.js");
 var {SteamControllerSequence, SteamControllerPlayer} = require("./sc_player.js");
 
 function playerTest() {

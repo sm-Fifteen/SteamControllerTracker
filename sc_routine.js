@@ -1,5 +1,5 @@
 var {FeedbackPacket} = require('./sc_packets.js');
-var music = require('./sc_music.js')
+var _ = require("lodash");
 
 /**
  * Routines are just abstractions of something the channel can keep doing until
@@ -48,26 +48,18 @@ class ConstantFrequency extends ChannelRoutine {
 	}
 }
 
-class FlatNote extends ConstantFrequency {
-	constructor(midiNote, hiRate = 1, loRate = 1) {
-		super(music.getMidiFreqency(midiNote), hiRate, loRate)
-	}
-}
-
-class ArpeggioNote extends ChannelRoutine {
-	constructor(midiNote, x, y, hiRate = 1, loRate = 1) {
+class LoopingPattern extends ChannelRoutine {
+	constructor(frequencies, hiRate = 1, loRate = 1) {
 		super();
-		this.notePackets = [
-			FeedbackPacket.createFromFrequency(music.getMidiFreqency(midiNote), hiRate, loRate),
-			FeedbackPacket.createFromFrequency(music.getMidiFreqency(midiNote + x), hiRate, loRate),
-			FeedbackPacket.createFromFrequency(music.getMidiFreqency(midiNote + y), hiRate, loRate),
-		];
+		this.packets = _.map(frequencies, function(freq){
+			return FeedbackPacket.createFromFrequency(freq, hiRate, loRate)
+		})
 	}
 
 	nextTickFn() {
-		var idx = this.ticksSinceStart % 3;
+		var idx = this.ticksSinceStart % this.packets.length;
 		this.ticksSinceStart++;
-		return this.notePackets[idx];
+		return this.packets[idx];
 	}
 }
 
@@ -75,5 +67,4 @@ module.exports.ChannelRoutine = ChannelRoutine;
 module.exports.StopRoutine = StopRoutine;
 module.exports.RawFeedback = RawFeedback;
 module.exports.ConstantFrequency = ConstantFrequency;
-module.exports.FlatNote = FlatNote;
-module.exports.ArpeggioNote = ArpeggioNote;
+module.exports.LoopingPattern = LoopingPattern;
