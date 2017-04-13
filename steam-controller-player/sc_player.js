@@ -22,9 +22,7 @@ class SteamControllerPlayer {
 	playSequence(sequence, beatsPerMinute, linesPerBeat, ticksPerLine) {
 		var timer = new SequenceTimer(sequence, this.nextTick.bind(this), beatsPerMinute, linesPerBeat, ticksPerLine);
 
-		var startPromise = Promise.bind(this, timer);
-
-		return startPromise.then(this.playTick(timer));
+		return this.playTick(timer);
 	}
 
 	playTick(timer) {
@@ -32,7 +30,6 @@ class SteamControllerPlayer {
 		if(!timer.time.finished){
 			return promise.bind(this).then(this.playTick);
 		}
-		return promise;
 	}
 
 	nextTick(tickDuration) {

@@ -40,7 +40,9 @@ function playerTest() {
 	sequence.add(16, channels[0], new StopRoutine());
 	sequence.add(16, channels[1], new StopRoutine());
 
-	var sequencePromise = SteamControllerPlayer.playSequence(sequence, 110, 2, 6)
+	return SteamControllerPlayer.playSequence(sequence, 110, 2, 6)
 }
 
-playerTest();
+playerTest().then(function(){
+	console.log("Done")
+});
