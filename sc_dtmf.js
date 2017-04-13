@@ -1,3 +1,5 @@
+var {Routines} = require("steam-controller-player");
+
 function getDTMF(number) {
 	var freq1 = 0;
 	var freq2 = 0;

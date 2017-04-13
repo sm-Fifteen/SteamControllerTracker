@@ -1,4 +1,4 @@
-var {ConstantFrequency, LoopingPattern} = require("./sc_routine.js");
+var {Routines} = require("steam-controller-player");
 
 // All 127 midi frequencies, taken from pilatomic's Steam Controller Signer
 var midiFrequency  = [
@@ -31,13 +31,13 @@ function displayNote(note) {
 	);
 }
 
-class FlatNote extends ConstantFrequency {
+class FlatNote extends Routines.ConstantFrequency {
 	constructor(midiNote, hiRate = 1, loRate = 1) {
 		super(getMidiFreqency(midiNote), hiRate, loRate)
 	}
 }
 
-class ArpeggioNote extends LoopingPattern {
+class ArpeggioNote extends Routines.LoopingPattern {
 	constructor(midiNote, x, y, hiRate = 1, loRate = 1) {
 		super([
 			getMidiFreqency(midiNote),

@@ -1,6 +1,6 @@
-var {StopRoutine} = require("./sc_routine.js");
+var {Routines, SteamControllerSequence, SteamControllerPlayer} = require("steam-controller-player");
 var {ArpeggioNote, FlatNote} = require("./sc_music.js");
-var {SteamControllerSequence, SteamControllerPlayer} = require("./sc_player.js");
+var StopRoutine = Routines.StopRoutine;
 
 function playerTest() {
 	var sequence = new SteamControllerSequence();
