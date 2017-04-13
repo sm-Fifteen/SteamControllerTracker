@@ -15,11 +15,6 @@ var midiFrequency  = [
 	8372.02, 8869.84, 9397.27, 9956.06, 10548.1, 11175.3, 11839.8, 12543.9
 ];
 
-// MIDI note number [0-127]
-function getMidiFreqency(note) {
-	return midiFrequency[note];
-}
-
 function displayNote(note) {
 	const noteBaseNameArray = [" C","C#"," D","D#"," E"," F","F#"," G","G#"," A","A#"," B"];
 	var frequency = midiFrequency[note];
@@ -33,16 +28,16 @@ function displayNote(note) {
 
 class FlatNote extends Routines.ConstantFrequency {
 	constructor(midiNote, hiRate = 1, loRate = 1) {
-		super(getMidiFreqency(midiNote), hiRate, loRate)
+		super(midiFrequency[midiNote], hiRate, loRate)
 	}
 }
 
 class ArpeggioNote extends Routines.LoopingPattern {
 	constructor(midiNote, x, y, hiRate = 1, loRate = 1) {
 		super([
-			getMidiFreqency(midiNote),
-			getMidiFreqency(midiNote + x),
-			getMidiFreqency(midiNote + y),
+			midiFrequency[midiNote],
+			midiFrequency[midiNote + x],
+			midiFrequency[midiNote + y],
 		], hiRate, loRate);
 	}
 }
