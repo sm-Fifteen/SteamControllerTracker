@@ -72,13 +72,13 @@ class SequenceTimer {
 	}
 
 	get time() {
-		return {
+		var line = this.sequence.atLine(this.lineCount);
+		return _.extend(line, {
 			duration: this.duration,
 			line: this.lineCount,
 			tick: this.tickCount,
-			channelUpdates: this.sequence.atLine(this.lineCount, this.tickCount),
 			finished: (this.sequence.lastLine < this.lineCount)
-		}
+		})
 	}
 
 	get beatsPerMinute() {
@@ -136,9 +136,10 @@ class SteamControllerSequence {
 		if(lineNum > this.lastLine) this.lastLine = lineNum;
 	}
 
-	atLine(lineNum, tickOffset) {
-		if(tickOffset) return []; // Unused for now
-		return this.channelUpdates[lineNum] || [];
+	atLine(lineNum) {
+		return {
+			channelUpdates: (this.channelUpdates[lineNum] || []),
+		}
 	}
 }
 
