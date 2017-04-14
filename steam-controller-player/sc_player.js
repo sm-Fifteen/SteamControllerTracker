@@ -73,6 +73,13 @@ class SequenceTimer {
 
 	get time() {
 		var line = this.sequence.atLine(this.lineCount);
+		if (line.timerUpdate) {
+			if(line.timerUpdate.beatsPerMinute) this._beatsPerMinute = line.timerUpdate.beatsPerMinute;
+			if(line.timerUpdate.linesPerBeat) this._linesPerBeat = line.timerUpdate.linesPerBeat;
+			if(line.timerUpdate.ticksPerLine) this._ticksPerLine = line.timerUpdate.ticksPerLine;
+			this.refreshTickDuration();
+		}
+
 		return _.extend(line, {
 			duration: this.duration,
 			line: this.lineCount,
@@ -117,6 +124,7 @@ class SequenceTimer {
 class SteamControllerSequence {
 	constructor() {
 		this.channelUpdates = {};
+		this.timerUpdates = {};
 		this.lastLine = 0;
 	}
 
@@ -136,9 +144,18 @@ class SteamControllerSequence {
 		if(lineNum > this.lastLine) this.lastLine = lineNum;
 	}
 
+	setTime(lineNum, tempo, linesPerBeat, speed) {
+		this.timerUpdates[lineNum] = {
+			beatsPerMinute: tempo,
+			linesPerBeat: linesPerBeat,
+			ticksPerLine: speed,
+		}
+	}
+
 	atLine(lineNum) {
 		return {
 			channelUpdates: (this.channelUpdates[lineNum] || []),
+			timerUpdate: this.timerUpdates[lineNum],
 		}
 	}
 }

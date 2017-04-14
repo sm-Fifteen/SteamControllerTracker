@@ -21,6 +21,8 @@ function playerTest() {
 	sequence.add(6, channels[0], new StopRoutine());
 	sequence.add(6, channels[1], new StopRoutine());
 
+	sequence.setTime(7, 220)
+
 	sequence.add(7, channels[0], new ArpeggioNote(77, 12, 0));
 	sequence.add(7, channels[1], new ArpeggioNote(77, 0, 12));
 
