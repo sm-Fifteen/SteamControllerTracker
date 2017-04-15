@@ -54,8 +54,6 @@ class SequenceTimer {
 			channelUpdate.channel.routine = channelUpdate.routine;
 		})
 
-		console.log(timer.time)
-
 		return timer.tickerFn(timer.time.duration).then(function(){
 			// TickerFn does not return the timer
 			timer.tick();
@@ -72,13 +70,21 @@ class SequenceTimer {
 	}
 
 	get time() {
-		return {
+		var line = this.sequence.atLine(this.lineCount);
+		if (line.timerUpdate) {
+			console.log(this)
+			if(line.timerUpdate.beatsPerMinute) this._beatsPerMinute = line.timerUpdate.beatsPerMinute;
+			if(line.timerUpdate.linesPerBeat) this._linesPerBeat = line.timerUpdate.linesPerBeat;
+			if(line.timerUpdate.ticksPerLine) this._ticksPerLine = line.timerUpdate.ticksPerLine;
+			this.refreshTickDuration();
+		}
+
+		return _.extend(line, {
 			duration: this.duration,
 			line: this.lineCount,
 			tick: this.tickCount,
-			channelUpdates: this.sequence.atLine(this.lineCount, this.tickCount),
 			finished: (this.sequence.lastLine < this.lineCount)
-		}
+		})
 	}
 
 	get beatsPerMinute() {
@@ -117,6 +123,7 @@ class SequenceTimer {
 class SteamControllerSequence {
 	constructor() {
 		this.channelUpdates = {};
+		this.timerUpdates = {};
 		this.lastLine = 0;
 	}
 
@@ -136,9 +143,19 @@ class SteamControllerSequence {
 		if(lineNum > this.lastLine) this.lastLine = lineNum;
 	}
 
-	atLine(lineNum, tickOffset) {
-		if(tickOffset) return []; // Unused for now
-		return this.channelUpdates[lineNum] || [];
+	setTime(lineNum, tempo, linesPerBeat, speed) {
+		this.timerUpdates[lineNum] = {
+			beatsPerMinute: tempo,
+			linesPerBeat: linesPerBeat,
+			ticksPerLine: speed,
+		}
+	}
+
+	atLine(lineNum) {
+		return {
+			channelUpdates: (this.channelUpdates[lineNum] || []),
+			timerUpdate: this.timerUpdates[lineNum],
+		}
 	}
 }
 
