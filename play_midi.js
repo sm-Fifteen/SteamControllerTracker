@@ -1,3 +1,9 @@
+/**
+ * An experiment to see if I could get midis to run properly in a tracker-style
+ * structure like that. Turns out MIDI does its timing in a mostly arbitrary way,
+ * so I'd have to bypass the sc_player interface to get that wor work correctly.
+*/
+
 var {Routines, SteamControllerSequence, SteamControllerPlayer} = require("steam-controller-player");
 var {ArpeggioNote, FlatNote} = require("./sc_music.js");
 var StopRoutine = Routines.StopRoutine;
@@ -14,7 +20,7 @@ var readFile = Promise.promisify(require('fs').readFile)
 readFile(tmpFilePathVar).then(function(data) {
 	return new midiFileLib(data.buffer);
 }).then(function(midiFile){
-	var speed = midiFile.header.getTicksPerBeat() * 4; // How many ticks in a *quarter*-note
+	var speed = midiFile.header.getTicksPerBeat(); // How many ticks in a *quarter*-note
 	var sequence = new SteamControllerSequence();
 	var channels = SteamControllerPlayer.channels;
 
