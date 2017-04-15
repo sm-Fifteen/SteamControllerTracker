@@ -54,8 +54,6 @@ class SequenceTimer {
 			channelUpdate.channel.routine = channelUpdate.routine;
 		})
 
-		console.log(timer.time)
-
 		return timer.tickerFn(timer.time.duration).then(function(){
 			// TickerFn does not return the timer
 			timer.tick();
@@ -74,6 +72,7 @@ class SequenceTimer {
 	get time() {
 		var line = this.sequence.atLine(this.lineCount);
 		if (line.timerUpdate) {
+			console.log(this)
 			if(line.timerUpdate.beatsPerMinute) this._beatsPerMinute = line.timerUpdate.beatsPerMinute;
 			if(line.timerUpdate.linesPerBeat) this._linesPerBeat = line.timerUpdate.linesPerBeat;
 			if(line.timerUpdate.ticksPerLine) this._ticksPerLine = line.timerUpdate.ticksPerLine;

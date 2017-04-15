@@ -14,28 +14,34 @@ var readFile = Promise.promisify(require('fs').readFile)
 readFile(tmpFilePathVar).then(function(data) {
 	return new midiFileLib(data.buffer);
 }).then(function(midiFile){
-	var midiEvents = midiFile.getMidiEvents();
-	var currentTempo = 100;
-	var speed = midiFile.header.getTicksPerBeat();
-	// We'll just circumvent midi ticks entirely and use them as lines
+	var speed = midiFile.header.getTicksPerBeat() * 4; // How many ticks in a *quarter*-note
 	var sequence = new SteamControllerSequence();
 	var channels = SteamControllerPlayer.channels;
-	var position = 0;
 
-	midiEvents.forEach(function(midiEvent){
-		if(midiEvent.type === MIDIEvents.EVENT_META && midiEvent.subtype === MIDIEvents.EVENT_META_SET_TEMPO) {
-			currentTempo = midiEvent.tempo;
-		} else if (midiEvent.type === MIDIEvents.EVENT_MIDI) {
-			if (midiEvent.subtype === MIDIEvents.EVENT_MIDI_NOTE_OFF) {
-				sequence.add(position, channels[midiEvent.channel], new StopRoutine());
-			} else if (midiEvent.subtype === MIDIEvents.EVENT_MIDI_NOTE_ON) {
-				if (midiEvent.channel >= channels.length) return;
-				sequence.add(position, channels[midiEvent.channel], new FlatNote(midiEvent.param1));
+	// Delta-timing works on a per-track basis
+	midiFile.tracks.forEach(function(midiTrack){
+		var midiEvents = MIDIEvents.createParser(midiTrack.getTrackContent(), 0);
+		var position = 0;
+		var channelNote = new Array(channels.length);
+
+		var midiEvent;
+		while (midiEvent = midiEvents.next()) {
+			if(midiEvent.type === MIDIEvents.EVENT_META && midiEvent.subtype === MIDIEvents.EVENT_META_SET_TEMPO) {
+				sequence.setTime(position, (midiEvent.tempo/250000) * speed); // tempo is in µs par quarter-note
+			} else if (midiEvent.type === MIDIEvents.EVENT_MIDI &&
+					midiEvent.channel >= 0 && midiEvent.channel < channels.length) {
+				if (midiEvent.subtype === MIDIEvents.EVENT_MIDI_NOTE_OFF) {
+					// Ignore for now
+					//sequence.add(position, channels[midiEvent.channel], new StopRoutine());
+				} else if (midiEvent.subtype === MIDIEvents.EVENT_MIDI_NOTE_ON) {
+					channelNote[midiEvent.channel] = midiEvent.param1;
+					sequence.add(position, channels[midiEvent.channel], new FlatNote(midiEvent.param1));
+				}
 			}
+			position += midiEvent.delta/4;
 		}
-		position += midiEvent.delta;
 	}, this)
 
 	//console.log(sequence)
-	return SteamControllerPlayer.playSequence(sequence, currentTempo, speed, 1);
+	return SteamControllerPlayer.playSequence(sequence, 120, 4, 1);
 })
