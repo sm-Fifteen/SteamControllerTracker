@@ -48,7 +48,7 @@ class ConstantFrequency extends ChannelRoutine {
 	}
 }
 
-class LoopingPattern extends ChannelRoutine {
+class CyclicPattern extends ChannelRoutine {
 	constructor(frequencies, hiRate = 1, loRate = 1) {
 		super();
 		this.packets = _.map(frequencies, function(freq){
@@ -67,4 +67,4 @@ module.exports.ChannelRoutine = ChannelRoutine;
 module.exports.StopRoutine = StopRoutine;
 module.exports.RawFeedback = RawFeedback;
 module.exports.ConstantFrequency = ConstantFrequency;
-module.exports.LoopingPattern = LoopingPattern;
+module.exports.CyclicPattern = CyclicPattern;
