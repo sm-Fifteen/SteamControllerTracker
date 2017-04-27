@@ -28,7 +28,17 @@ readFile(tmpFilePathVar).then(function(data) {
 			
 			for(var channel = 0; channel < maxChannels; channel++) {
 				const update = module.get_pattern_row_channel(pattern, row, channel)
-				sequence.add(sequenceCounter, channels[channel], new FlatNote(update.note));
+				
+				// OpenMPT's note table starts one octave higher than midi
+				if (update.effect === 1 && update.parameter !== 0) {
+					var arp1 = update.parameter >> 8;
+					var arp2 = update.parameter % 16;
+					sequence.add(sequenceCounter, channels[channel], new ArpeggioNote(update.note + 12, arp1, arp2));
+				} else if (update.note !== 0) {
+					sequence.add(sequenceCounter, channels[channel], new FlatNote(update.note + 12));
+				} else if (!update.effect && !update.parameter) {
+					sequence.add(sequenceCounter, channels[channel], new StopRoutine());
+				}
 			}
 			sequenceCounter++;
 		}
@@ -38,3 +48,10 @@ readFile(tmpFilePathVar).then(function(data) {
 	// https://wiki.openmpt.org/Manual:_Song_Properties#Tempo_Mode
 	return SteamControllerPlayer.playSequence(sequence, tempo, 24/speed, speed);
 })
+
+
+function logUpdate(update){
+	console.log(update.string + " : [" + update.note + "," +
+		update.instrument + "," + update.volume + "," +
+		update.effect + "," + update.parameter + "]");
+}
