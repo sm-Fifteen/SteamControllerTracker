@@ -30,14 +30,19 @@ readFile(tmpFilePathVar).then(function(data) {
 				const update = module.get_pattern_row_channel(pattern, row, channel)
 				
 				// OpenMPT's note table starts one octave higher than midi
-				if (update.effect === 1 && update.parameter !== 0) {
+				if (update.note === 0) {
+					// Not a new note, maybe an effect update
+					if (!update.effect && !update.parameter) {
+						sequence.add(sequenceCounter, channels[channel], new StopRoutine());
+					}
+				} else if (update.effect === 1 && update.parameter !== 0) {
+					// New arpeggio
 					var arp1 = update.parameter >> 8;
 					var arp2 = update.parameter % 16;
 					sequence.add(sequenceCounter, channels[channel], new ArpeggioNote(update.note + 12, arp1, arp2));
-				} else if (update.note !== 0) {
+				} else {
+					// New regular note
 					sequence.add(sequenceCounter, channels[channel], new FlatNote(update.note + 12));
-				} else if (!update.effect && !update.parameter) {
-					sequence.add(sequenceCounter, channels[channel], new StopRoutine());
 				}
 			}
 			sequenceCounter++;
