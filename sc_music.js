@@ -32,7 +32,7 @@ class FlatNote extends Routines.ConstantFrequency {
 	}
 }
 
-class ArpeggioNote extends Routines.LoopingPattern {
+class ArpeggioNote extends Routines.CyclicPattern {
 	constructor(midiNote, x, y, hiRate = 1, loRate = 1) {
 		super([
 			midiFrequency[midiNote],
