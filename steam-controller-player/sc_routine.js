@@ -52,7 +52,7 @@ class CyclicPattern extends ChannelRoutine {
 	constructor(frequencies, hiRate = 1, loRate = 1) {
 		super();
 		this.packets = _.map(frequencies, function(freq){
-			return FeedbackPacket.createFromFrequency(freq, hiRate, loRate)
+			return FeedbackPacket.createFromFrequency(freq, -1, hiRate, loRate)
 		})
 	}
 
