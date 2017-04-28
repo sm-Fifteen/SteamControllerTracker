@@ -4,9 +4,8 @@
  * so I'd have to bypass the sc_player interface to get that wor work correctly.
 */
 
-var {Routines, SteamControllerSequence, SteamControllerPlayer} = require("steam-controller-player");
-var {ArpeggioNote, FlatNote} = require("./sc_music.js");
-var StopRoutine = Routines.StopRoutine;
+var {SteamControllerSequence, SteamControllerPlayer} = require("steam-controller-player");
+var {StopRoutine, ArpeggioNote, FlatNote} = require("./sc_music.js");
 
 var Promise = require("bluebird");
 var midiFileLib = require('midifile');
