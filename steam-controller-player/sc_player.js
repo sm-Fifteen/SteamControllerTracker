@@ -20,7 +20,7 @@ class SteamControllerPlayer {
 	}
 
 	playSequence(sequence, beatsPerMinute, linesPerBeat, ticksPerLine) {
-		var sequencePlayer = startSequence(sequence, this.devices, beatsPerMinute, linesPerBeat, ticksPerLine)
+		var sequencePlayer = startSequence(sequence, beatsPerMinute, linesPerBeat, ticksPerLine)
 		var sc_player = this;
 		
 		function chainHandle(result) {
@@ -34,7 +34,7 @@ class SteamControllerPlayer {
 			})
 		}
 		
-		function* startSequence(sequence, devices, beatsPerMinute, linesPerBeat, ticksPerLine) {
+		function* startSequence(sequence, beatsPerMinute, linesPerBeat, ticksPerLine) {
 			// A generator that reads the sequence and outputs promises when it needs to wait for IO.
 			const timer = new SequenceTimer(beatsPerMinute, linesPerBeat, ticksPerLine);
 			
@@ -50,7 +50,6 @@ class SteamControllerPlayer {
 					if (updates.timerUpdate) timer.timing = updates.timerUpdate;
 				}
 		
-				// TODO : Extra devices
 				yield sc_player.nextTick(timer.tickDuration)
 				timer.tick++
 			}
