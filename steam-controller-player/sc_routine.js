@@ -49,11 +49,9 @@ class ConstantFrequency extends ChannelRoutine {
 }
 
 class CyclicPattern extends ChannelRoutine {
-	constructor(frequencies, hiRate = 1, loRate = 1) {
+	constructor(packets) {
 		super();
-		this.packets = _.map(frequencies, function(freq){
-			return FeedbackPacket.createFromFrequency(freq, -1, hiRate, loRate)
-		})
+		this.packets = packets;
 	}
 
 	nextTickFn() {
@@ -68,3 +66,4 @@ module.exports.StopRoutine = StopRoutine;
 module.exports.RawFeedback = RawFeedback;
 module.exports.ConstantFrequency = ConstantFrequency;
 module.exports.CyclicPattern = CyclicPattern;
+module.exports.packetFromFrequency = FeedbackPacket.createFromFrequency;

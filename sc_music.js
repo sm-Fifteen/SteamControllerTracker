@@ -35,10 +35,10 @@ class FlatNote extends Routines.ConstantFrequency {
 class ArpeggioNote extends Routines.CyclicPattern {
 	constructor(midiNote, x, y, hiRate = 1, loRate = 1) {
 		super([
-			midiFrequency[midiNote],
-			midiFrequency[midiNote + x],
-			midiFrequency[midiNote + y],
-		], hiRate, loRate);
+			Routines.packetFromFrequency(midiFrequency[midiNote], -1, hiRate, loRate),
+			Routines.packetFromFrequency(midiFrequency[midiNote + x], -1, hiRate, loRate),
+			Routines.packetFromFrequency(midiFrequency[midiNote + y], -1, hiRate, loRate),			
+		]);
 	}
 }
 
