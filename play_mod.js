@@ -51,6 +51,8 @@ readFile(tmpFilePathVar).then(function(data) {
 	// Using clasic tempo mode, see OpenMPT wiki
 	// https://wiki.openmpt.org/Manual:_Song_Properties#Tempo_Mode
 	return SteamControllerPlayer.playSequence(sequence, tempo, 24/speed, speed);
+}).then(function(){
+	SteamControllerPlayer.mute();
 })
 
 
