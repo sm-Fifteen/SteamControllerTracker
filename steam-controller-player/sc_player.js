@@ -21,6 +21,7 @@ class SteamControllerPlayer {
 
 	playSequence(sequence, beatsPerMinute, linesPerBeat, ticksPerLine) {
 		var sequencePlayer = startSequence(sequence, this.devices, beatsPerMinute, linesPerBeat, ticksPerLine)
+		var sc_player = this;
 		
 		function chainHandle(result) {
 			// Based on this : https://www.promisejs.org/generators/
@@ -50,12 +51,24 @@ class SteamControllerPlayer {
 				}
 		
 				// TODO : Extra devices
-				yield devices[0].nextTick(timer.tickDuration)
+				yield sc_player.nextTick(timer.tickDuration)
 				timer.tick++
 			}
 		}
 		
 		return chainHandle(sequencePlayer.next());
+	}
+	
+	nextTick(duration) {
+		// TODO : Multiple devices
+		return this.devices[0].nextTick(duration);
+	}
+	
+	mute() {
+		this.channels.forEach(function(channel) {
+			channel.routine = new Routines.StopRoutine();
+		})
+		return this.nextTick(0);
 	}
 }
 
