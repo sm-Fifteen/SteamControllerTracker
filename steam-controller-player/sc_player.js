@@ -40,14 +40,13 @@ class SteamControllerPlayer {
 			while(timer.line < sequence.lastLine + 1 ) {
 				if(timer.tick === 0) {
 					var updates = sequence.atLine(timer.line);
-					console.log(updates)
 					
 					// Set the channel pointed by a routine to play that routine.
 					updates.channelUpdates.forEach(function(channelUpdate){
 						channelUpdate.channel.routine = channelUpdate.routine;
 					})
 					
-					// TODO : Timer updates
+					if (updates.timerUpdate) timer.timing = updates.timerUpdate;
 				}
 		
 				// TODO : Extra devices
@@ -56,9 +55,7 @@ class SteamControllerPlayer {
 			}
 		}
 		
-		console.log("Start chain")
 		return chainHandle(sequencePlayer.next());
-		console.log("Done")
 	}
 }
 
@@ -101,26 +98,18 @@ class SequenceTimer {
 		return this._beatsPerMinute;
 	}
 
-	set beatsPerMinute(newBPM) {
-		this._beatsPerMinute = newBPM;
-		this.duration = undefined;
-	}
-
 	get linesPerBeat() {
 		return this._linesPerBeat;
 	}
-
-	set linesPerBeat(newLPB) {
-		this._linesPerBeat = newLPB;
-		this.duration = undefined;
-	}
-
+	
 	get ticksPerLine() {
 		return this._ticksPerLine;
 	}
-
-	set ticksPerLine(newTPL) {
-		this._ticksPerLine = newTPL;
+	
+	set timing(timingObj) {
+		if(timingObj.beatsPerMinute) this._beatsPerMinute = timingObj.beatsPerMinute
+		if(timingObj.linesPerBeat) this._linesPerBeat = timingObj.linesPerBeat
+		if(timingObj.ticksPerLine) this._ticksPerLine = timingObj.ticksPerLine
 		this.duration = undefined;
 	}
 
