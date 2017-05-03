@@ -20,71 +20,81 @@ class SteamControllerPlayer {
 	}
 
 	playSequence(sequence, beatsPerMinute, linesPerBeat, ticksPerLine) {
-		var timer = new SequenceTimer(sequence, this.nextTick.bind(this), beatsPerMinute, linesPerBeat, ticksPerLine);
+		var sequencePlayer = startSequence(sequence, this.devices, beatsPerMinute, linesPerBeat, ticksPerLine)
+		
+		function chainHandle(result) {
+			// Based on this : https://www.promisejs.org/generators/
+			var valuePromise = Promise.resolve(result.value);
 
-		return this.playTick(timer);
-	}
-
-	playTick(timer) {
-		var promise = SequenceTimer.playTick(timer);
-		if(!timer.time.finished){
-			return promise.bind(this).then(this.playTick);
+			if(result.done) return valuePromise;
+	
+			return valuePromise.then(function(result) {
+				return chainHandle(sequencePlayer.next());
+			})
 		}
-	}
-
-	nextTick(tickDuration) {
-		return this.devices[0].nextTick(tickDuration)
+		
+		function* startSequence(sequence, devices, beatsPerMinute, linesPerBeat, ticksPerLine) {
+			// A generator that reads the sequence and outputs promises when it needs to wait for IO.
+			const timer = new SequenceTimer(beatsPerMinute, linesPerBeat, ticksPerLine);
+			
+			while(timer.line < sequence.lastLine + 1 ) {
+				if(timer.tick === 0) {
+					var updates = sequence.atLine(timer.line);
+					console.log(updates)
+					
+					// Set the channel pointed by a routine to play that routine.
+					updates.channelUpdates.forEach(function(channelUpdate){
+						channelUpdate.channel.routine = channelUpdate.routine;
+					})
+					
+					// TODO : Timer updates
+				}
+		
+				// TODO : Extra devices
+				yield devices[0].nextTick(timer.tickDuration)
+				timer.tick++
+			}
+		}
+		
+		console.log("Start chain")
+		return chainHandle(sequencePlayer.next());
+		console.log("Done")
 	}
 }
 
 class SequenceTimer {
-	constructor(sequence, tickerFn, beatsPerMinute, linesPerBeat, ticksPerLine){
+	constructor(beatsPerMinute, linesPerBeat, ticksPerLine){
 		this._beatsPerMinute = beatsPerMinute;
 		this._linesPerBeat = linesPerBeat;
 		this._ticksPerLine = ticksPerLine;
-		this.refreshTickDuration();
-		this.sequence = sequence;
-		this.tickerFn = tickerFn;
+		
 		this.tickCount = 0;
 		this.lineCount = 0;
 	}
 
-	static playTick(timer) {
-		timer.time.channelUpdates.forEach(function(channelUpdate){
-			channelUpdate.channel.routine = channelUpdate.routine;
-		})
-
-		return timer.tickerFn(timer.time.duration).then(function(){
-			// TickerFn does not return the timer
-			timer.tick();
-			return timer;
-		});
+	get tick() {
+		return this.tickCount;
 	}
-
-	tick() {
-		this.tickCount++;
+	
+	set tick(newVal) {
+		// Only intended for increments, but could be repurposed to allow jumps
+		this.tickCount = newVal;
 		if(this.tickCount % this.ticksPerLine == 0) {
 			this.lineCount++;
 			this.tickCount = 0;
 		}
-	}
-
-	get time() {
-		var line = this.sequence.atLine(this.lineCount);
-		if (line.timerUpdate) {
-			console.log(this)
-			if(line.timerUpdate.beatsPerMinute) this._beatsPerMinute = line.timerUpdate.beatsPerMinute;
-			if(line.timerUpdate.linesPerBeat) this._linesPerBeat = line.timerUpdate.linesPerBeat;
-			if(line.timerUpdate.ticksPerLine) this._ticksPerLine = line.timerUpdate.ticksPerLine;
-			this.refreshTickDuration();
-		}
-
-		return _.extend(line, {
-			duration: this.duration,
-			line: this.lineCount,
-			tick: this.tickCount,
-			finished: (this.sequence.lastLine < this.lineCount)
-		})
+    }
+    
+	get line() {
+		return this.lineCount;
+    }
+    
+    get tickDuration() {
+		// Changing the speed invalidates the tick duration.
+		// If we change all 3, we won't have to recalculate 3 times.
+		if (!this.duration) this.refreshTickDuration();
+		
+		return this.duration;
 	}
 
 	get beatsPerMinute() {
@@ -93,7 +103,7 @@ class SequenceTimer {
 
 	set beatsPerMinute(newBPM) {
 		this._beatsPerMinute = newBPM;
-		this.refreshTickDuration();
+		this.duration = undefined;
 	}
 
 	get linesPerBeat() {
@@ -102,7 +112,7 @@ class SequenceTimer {
 
 	set linesPerBeat(newLPB) {
 		this._linesPerBeat = newLPB;
-		this.refreshTickDuration();
+		this.duration = undefined;
 	}
 
 	get ticksPerLine() {
@@ -111,7 +121,7 @@ class SequenceTimer {
 
 	set ticksPerLine(newTPL) {
 		this._ticksPerLine = newTPL;
-		this.refreshTickDuration();
+		this.duration = undefined;
 	}
 
 	refreshTickDuration() {
