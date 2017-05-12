@@ -4,8 +4,9 @@
   "description": "An offshot of the SteamControllerSigner that aims to take advantage of the SC's dual pulse channel nature",
   "main": "sc_test.js",
   "dependencies": {
-    "steam-controller-player": "file:./steam-controller-player",
-    "node-libopenmpt": "sm-Fifteen/node-libopenmpt"
+    "commander": "^2.9.0",
+    "node-libopenmpt": "sm-Fifteen/node-libopenmpt",
+    "steam-controller-player": "file:./steam-controller-player"
   },
   "devDependencies": {},
   "repository": {
