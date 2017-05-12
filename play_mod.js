@@ -2,14 +2,27 @@ var {SteamControllerSequence, SteamControllerPlayer} = require("steam-controller
 var {StopRoutine, ArpeggioNote, FlatNote} = require("./sc_music.js");
 
 const OpenMTP_Module = require('node-libopenmpt');
+var program = require('commander');
 var Promise = require("bluebird");
 const fs = require('fs');
 
+program
+	.arguments('<trackerFile>')
+	.description('Reads a tracker file (MOD/XM/IT/S3M, etc.) and ' +
+			'attempts to play it on a connected Steam Controller')
+	
+program.parse(process.argv);
+	
+if (program.args.length === 0) {
+	program.outputHelp();
+	return 1;
+}
+
+var filePath = program.args[0];
+
 var readFile = Promise.promisify(require('fs').readFile);
 
-var tmpFilePathVar = 'alf2_zalza_edit.xm';
-
-readFile(tmpFilePathVar).then(function(data) {
+readFile(filePath).then(function(data) {
     return new OpenMTP_Module(data);
 }).then(function(module){
 	var sequence = new SteamControllerSequence();
