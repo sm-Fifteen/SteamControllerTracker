@@ -19,16 +19,17 @@ function displayNote(note) {
 	const noteBaseNameArray = [" C","C#"," D","D#"," E"," F","F#"," G","G#"," A","A#"," B"];
 	var frequency = midiFrequency[note];
 
-	console.log(
-		noteBaseNameArray[note % 12] +
-		Math.floor((note/12) -1) +
-		" ("+ frequency + "Hz)"
-	);
+	return 	noteBaseNameArray[note % 12] + Math.floor((note/12) -1)
 }
 
 class FlatNote extends Routines.ConstantFrequency {
 	constructor(midiNote, hiRate = 1, loRate = 1) {
 		super(midiFrequency[midiNote], hiRate, loRate)
+		this.string = displayNote(midiNote);
+	}
+	
+	toString() {
+		return this.string;
 	}
 }
 
@@ -39,6 +40,11 @@ class ArpeggioNote extends Routines.CyclicPattern {
 			Routines.packetFromFrequency(midiFrequency[midiNote + x], -1, hiRate, loRate),
 			Routines.packetFromFrequency(midiFrequency[midiNote + y], -1, hiRate, loRate),			
 		]);
+		this.string = displayNote(midiNote) + "," + displayNote(midiNote+x) + "," + displayNote(midiNote+y)
+	}
+	
+	toString() {
+		return this.string;
 	}
 }
 

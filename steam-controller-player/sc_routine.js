@@ -14,6 +14,10 @@ class ChannelRoutine {
 	nextTickFn() {
 		return;
 	}
+	
+	toString() {
+		return JSON.stringify(this);
+	}
 }
 
 class RawFeedback extends ChannelRoutine {
@@ -32,6 +36,10 @@ class RawFeedback extends ChannelRoutine {
 class StopRoutine extends RawFeedback{
 	constructor() {
 		super(0,0,0);
+	}
+	
+	toString() {
+		return "STOP";
 	}
 }
 
