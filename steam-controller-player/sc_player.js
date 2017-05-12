@@ -44,6 +44,7 @@ class SteamControllerPlayer {
 					
 					// Set the channel pointed by a routine to play that routine.
 					updates.channelUpdates.forEach(function(channelUpdate){
+						console.log("Channel #" + channelUpdate.channel.channelId + ":" + channelUpdate.routine)
 						channelUpdate.channel.routine = channelUpdate.routine;
 					})
 					
@@ -58,7 +59,7 @@ class SteamControllerPlayer {
 		return chainHandle(sequencePlayer.next());
 	}
 	
-	nextTick(duration) {
+	nextTick(duration) {		
 		// TODO : Multiple devices
 		return this.devices[0].nextTick(duration);
 	}

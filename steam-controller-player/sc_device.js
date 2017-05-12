@@ -50,7 +50,6 @@ class SteamControllerDevice {
 				var tickPacket = channel.nextTickData();
 
 				if(tickPacket) {
-					console.log("Channel #" + channel.channelId + ":" + channel.currentRoutine)
 					return device.sendBlob(tickPacket.generateBlob(channel.channelId, 0x1));
 				} else {
 					return Promise.resolve();
