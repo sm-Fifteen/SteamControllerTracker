@@ -19,6 +19,8 @@ readFile(tmpFilePathVar).then(function(data) {
 
 	var tempo = module.current_tempo;
 	var speed = module.current_speed;
+	var channelState = {/* Per channel : {note:0, tmpEffect:false} */}
+	var effectMemory = {/* Per channel : {[effect]:parameter} */}
 
 	for(var order = module.current_order; order < module.num_orders; order++) {
 		const pattern = module.get_order_pattern(order);
@@ -27,23 +29,37 @@ readFile(tmpFilePathVar).then(function(data) {
 
 			for(var channel = 0; channel < maxChannels; channel++) {
 				const update = module.get_pattern_row_channel(pattern, row, channel)
-
-				// OpenMPT's note table starts one octave higher than midi
-				if (update.note === 0) {
-					// Not a new note, maybe an effect update
-					if (!update.effect && !update.parameter) {
-						sequence.add(sequenceCounter, channels[channel], new StopRoutine());
-					}
-				} else if (update.effect === 1 && update.parameter !== 0) {
-					// New arpeggio
-					var arp1 = update.parameter >> 8;
-					var arp2 = update.parameter % 16;
-					sequence.add(sequenceCounter, channels[channel], new ArpeggioNote(update.note + 12, arp1, arp2));
-				} else {
-					// New regular note
-					sequence.add(sequenceCounter, channels[channel], new FlatNote(update.note + 12));
+				var state = channelState[channel] || {};
+				var note = update.note || state.note;
+			
+				switch(update.effect) {
+					case 1: // Arpeggio
+						var arp1 = update.parameter >> 8;
+						var arp2 = update.parameter % 16;
+						sequence.add(sequenceCounter, channels[channel], new ArpeggioNote(note + 12, arp1, arp2));
+						
+						state.tmpEffect = true;
+						break;
+					default: // Unsupported effect, aliased to 0
+					case 0: // No effect
+						if (update.note === -1){
+							sequence.add(sequenceCounter, channels[channel], new StopRoutine());
+							
+							state.tmpEffect = false;
+						} else if (update.note !== 0 || state.tmpEffect) {
+							// Actual new flat note change (case 0 + update.note)
+							// OR Effect is temporary and has not been reinstated (case 0 + state.tmpEffect)
+							sequence.add(sequenceCounter, channels[channel], new FlatNote(note + 12));
+							
+							state.tmpEffect = false;
+						}
+						// 0 with no effect means it's just a noOp
+						break;
 				}
+				state.note = note;
+				channelState[channel] = state;
 			}
+			
 			sequenceCounter++;
 		}
 	}
