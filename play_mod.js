@@ -6,6 +6,8 @@ var program = require('commander');
 var Promise = require("bluebird");
 const fs = require('fs');
 
+Promise.config({cancellation: true})
+
 program
 	.arguments('<trackerFile>')
 	.description('Reads a tracker file (MOD/XM/IT/S3M, etc.) and ' +
@@ -22,7 +24,7 @@ var filePath = program.args[0];
 
 var readFile = Promise.promisify(require('fs').readFile);
 
-readFile(filePath).then(function(data) {
+var playerPromise = readFile(filePath).then(function(data) {
     return new OpenMTP_Module(data);
 }).then(function(module){
 	var sequence = new SteamControllerSequence();
@@ -80,10 +82,13 @@ readFile(filePath).then(function(data) {
 	// Using clasic tempo mode, see OpenMPT wiki
 	// https://wiki.openmpt.org/Manual:_Song_Properties#Tempo_Mode
 	return SteamControllerPlayer.playSequence(sequence, tempo, 24/speed, speed);
-}).then(function(){
-	SteamControllerPlayer.mute();
+}).finally(function(){
+	return SteamControllerPlayer.mute();
 })
 
+process.on('SIGINT', function() {
+	playerPromise.cancel();
+})
 
 function logUpdate(update){
 	console.log(update.string + " : [" + update.note + "," +
