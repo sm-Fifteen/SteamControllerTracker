@@ -34,6 +34,7 @@ program
 		instrDict[instrId] = [0, 0];
 		return instrDict;
 	}, {})
+	.option('-O, --octave-offset <offset>', 'Shift all the notes up or down by n octaves. This is useful if you want to avoid notes like A440 (A4), which sounds expecially nasty on the Steam controller for some reason.', parseInt)
 	
 try {
 	program.parse(process.argv);
@@ -113,6 +114,7 @@ function getDutyRatio(instrumentId) {
 
 function updateToRoutine(update, state) {
 	// moduleUpdate and channelState
+	const noteOffset = 12 * (program.octaveOffset || 0);
 	var note = update.note || state.note;
 	var newRoutine;
 	var [highNum, lowNum] = getDutyRatio(update.instrument);
@@ -129,7 +131,7 @@ function updateToRoutine(update, state) {
 				var arp1 = update.parameter >> 8;
 				var arp2 = update.parameter % 16;
 				
-				newRoutine = new ArpeggioNote(note + 12, arp1, arp2, highNum, lowNum);
+				newRoutine = new ArpeggioNote(note + noteOffset, arp1, arp2, highNum, lowNum);
 				state.tmpEffect = true;
 				break;
 			default: // Unsupported effect, aliased to 0
@@ -137,7 +139,7 @@ function updateToRoutine(update, state) {
 				if (update.note !== 0 || state.tmpEffect) {
 					// Actual new flat note change (case 0 + update.note)
 					// OR Effect is temporary and has not been reinstated (case 0 + state.tmpEffect)
-					newRoutine = new FlatNote(note + 12, highNum, lowNum);
+					newRoutine = new FlatNote(note + noteOffset, highNum, lowNum);
 					state.tmpEffect = false;
 				}
 				// 0 with no effect means it's just a noOp
