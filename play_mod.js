@@ -51,35 +51,13 @@ var playerPromise = readFile(filePath).then(function(data) {
 
 			for(var channel = 0; channel < channelMap.length; channel++) {
 				const update = module.get_pattern_row_channel(pattern, row, channelMap[channel])
+				console.log(update.string)
 				var state = channelState[channel] || {};
-				var note = update.note || state.note;
-			
-				switch(update.effect) {
-					case 1: // Arpeggio
-						var arp1 = update.parameter >> 8;
-						var arp2 = update.parameter % 16;
-						sequence.add(sequenceCounter, channel, new ArpeggioNote(note + 12, arp1, arp2));
-						
-						state.tmpEffect = true;
-						break;
-					default: // Unsupported effect, aliased to 0
-					case 0: // No effect
-						if (update.note === -1){
-							sequence.add(sequenceCounter, channel, new StopRoutine());
-							
-							state.tmpEffect = false;
-						} else if (update.note !== 0 || state.tmpEffect) {
-							// Actual new flat note change (case 0 + update.note)
-							// OR Effect is temporary and has not been reinstated (case 0 + state.tmpEffect)
-							sequence.add(sequenceCounter, channel, new FlatNote(note + 12));
-							
-							state.tmpEffect = false;
-						}
-						// 0 with no effect means it's just a noOp
-						break;
-				}
-				state.note = note;
-				channelState[channel] = state;
+				
+				var routine = updateToRoutine(update, state);
+				if(routine) sequence.add(sequenceCounter, channel, routine);
+				
+				channelState[channel] = state; // Update to routine affects the state
 			}
 			
 			sequenceCounter++;
@@ -96,6 +74,40 @@ var playerPromise = readFile(filePath).then(function(data) {
 process.on('SIGINT', function() {
 	playerPromise.cancel();
 })
+
+function updateToRoutine(update, state) {
+	// moduleUpdate and channelState
+	var note = update.note || state.note;
+	var newRoutine;
+				
+	if (update.note === -1){
+		state.tmpEffect = false;
+		newRoutine = new StopRoutine();
+	} else {
+		switch(update.effect) {
+			case 1: // Arpeggio
+				var arp1 = update.parameter >> 8;
+				var arp2 = update.parameter % 16;
+				
+				newRoutine = new ArpeggioNote(note + 12, arp1, arp2);
+				state.tmpEffect = true;
+				break;
+			default: // Unsupported effect, aliased to 0
+			case 0: // No effect
+				if (update.note !== 0 || state.tmpEffect) {
+					// Actual new flat note change (case 0 + update.note)
+					// OR Effect is temporary and has not been reinstated (case 0 + state.tmpEffect)
+					newRoutine = new FlatNote(note + 12);
+					state.tmpEffect = false;
+				}
+				// 0 with no effect means it's just a noOp
+				break;
+		}
+	}
+	
+	state.note = note;
+	return newRoutine;
+}
 
 function logUpdate(update){
 	console.log(update.string + " : [" + update.note + "," +
