@@ -12,14 +12,14 @@ program
 	.arguments('<trackerFile>')
 	.description('Reads a tracker file (MOD/XM/IT/S3M, etc.) and ' +
 			'attempts to play it on a connected Steam Controller')
-	.option('-c, --channels <chan0,chan1,chan2>', 'Which channels from the tracker file are to be played', function(listString) {
+	.option('-c, --channels <chan1,chan2,chan3>', 'Which channels from the tracker file are to be played. Channel numbering starts at 1.', function(listString) {
 		return listString.split(",").map(function(num){
 			return parseInt(num)
 		});
 	})
 	.option('-s, --start-position <orderNum>', 'How many patterns after the beginning of the song should the player start at.', parseInt)
 	.option('-S, --stop-after <nPatterns>', 'How many patterns should be played before stopping.', parseInt)
-	.option('-i, --instrument <instrument=high:low>', 'What square wave duty cycle should an instrument be mapped to.', function(instrStr, instrDict) {
+	.option('-i, --instrument <instrument=high:low>', 'What square wave duty cycle should an instrument be mapped to. Instrument numbering starts at 1.', function(instrStr, instrDict) {
 		var [instrKey, instrRatio] = instrStr.split("=");
 		if(!instrKey || !instrRatio) throw new Error("Bad instrument option '" + instrStr + "'")
 		
@@ -29,7 +29,7 @@ program
 		instrDict[instrKey] = [parseInt(highNum), parseInt(lowNum)];
 		return instrDict;
 	}, {})
-	.option('-p, --pulse <instrument>', 'Interpret that instrument as a pulse rather than a tone, overrides --instrument.', function(instrId, instrDict){
+	.option('-p, --pulse <instrument>', 'Interpret that instrument as a pulse rather than a tone, overrides --instrument. Instrument numbering starts at 1.', function(instrId, instrDict){
 		instrId = parseInt(instrId);
 		instrDict[instrId] = [0, 0];
 		return instrDict;
@@ -65,7 +65,7 @@ var playerPromise = readFile(filePath).then(function(data) {
 	var channels = SteamControllerPlayer.channels;
 	var sequenceCounter = 0;
 	
-	var channelMap = program.channels || [0,1]; // TODO : Generate 0..n for n channels
+	var channelMap = program.channels || [1,2]; // TODO : Generate 1..n+1 for n channels
 	channelMap = channelMap.slice(0, channels.length)
 
 	var tempo = module.current_tempo;
@@ -82,7 +82,7 @@ var playerPromise = readFile(filePath).then(function(data) {
 		
 		for(var row = 0; row < module.get_pattern_num_rows(pattern); row++) {
 			for(var channel = 0; channel < channelMap.length; channel++) {
-				const update = module.get_pattern_row_channel(pattern, row, channelMap[channel])
+				const update = module.get_pattern_row_channel(pattern, row, channelMap[channel]-1)
 				var state = channelState[channel] || {};
 				
 				var routine = updateToRoutine(update, state);
