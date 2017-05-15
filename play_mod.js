@@ -1,5 +1,5 @@
 var {SteamControllerSequence, SteamControllerPlayer} = require("steam-controller-player");
-var {StopRoutine, ArpeggioNote, FlatNote} = require("./sc_music.js");
+var {StopRoutine, Pulse, ArpeggioNote, FlatNote} = require("./sc_music.js");
 
 const OpenMTP_Module = require('node-libopenmpt');
 var program = require('commander');
@@ -27,6 +27,12 @@ program
 		if(!highNum || !lowNum) throw new Error("Bad instrument option '" + instrStr + "'")
 		
 		instrDict[instrKey] = [parseInt(highNum), parseInt(lowNum)];
+		return instrDict;
+	}, {})
+	.option('-p, --pulse <instrument>', 'Interpret that instrument as a pulse rather than a tone, overrides --instrument.', function(instrId, instrDict){
+		instrId = parseInt(instrId);
+		instrDict[instrId] = [0, 0];
+		return instrDict;
 	}, {})
 	
 try {
@@ -41,6 +47,11 @@ if (program.args.length === 0) {
 	program.outputHelp();
 	return 1;
 }
+
+Object.keys(program.pulse).forEach(function(instrument) {
+	// Pulse instruments override regular ones
+	program.instrument[instrument] = program.pulse[instrument];
+})
 
 var filePath = program.args[0];
 
@@ -109,6 +120,9 @@ function updateToRoutine(update, state) {
 	if (update.note === -1){
 		state.tmpEffect = false;
 		newRoutine = new StopRoutine();
+	} else if (highNum == 0 || lowNum == 0) {
+		state.tmpEffect = false;
+		newRoutine = new Pulse(1000); // TODO : Less arbitrary value/react to note?
 	} else {
 		switch(update.effect) {
 			case 1: // Arpeggio
