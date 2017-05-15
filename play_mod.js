@@ -18,9 +18,24 @@ program
 		});
 	})
 	.option('-s, --start-position <orderNum>', 'How many patterns after the beginning of the song should the player start at.', parseInt)
-	.option('-S, --stop-after <nPatterns>', 'How many patterns should be played before stopping.', parseInt),
+	.option('-S, --stop-after <nPatterns>', 'How many patterns should be played before stopping.', parseInt)
+	.option('-i, --instrument <instrument=high:low>', 'What square wave duty cycle should an instrument be mapped to.', function(instrStr, instrDict) {
+		var [instrKey, instrRatio] = instrStr.split("=");
+		if(!instrKey || !instrRatio) throw new Error("Bad instrument option '" + instrStr + "'")
+		
+		var [highNum, lowNum] = instrRatio.split(":");
+		if(!highNum || !lowNum) throw new Error("Bad instrument option '" + instrStr + "'")
+		
+		instrDict[instrKey] = [parseInt(highNum), parseInt(lowNum)];
+	}, {})
 	
-program.parse(process.argv);
+try {
+	program.parse(process.argv);
+} catch(e) {
+	console.error(e.message);
+	program.outputHelp();
+	return 1;
+}
 	
 if (program.args.length === 0) {
 	program.outputHelp();
@@ -79,10 +94,17 @@ process.on('SIGINT', function() {
 	playerPromise.cancel();
 })
 
+function getDutyRatio(instrumentId) {
+	if (!program.instrument) return [1,1];
+	if (!program.instrument[instrumentId]) return [1,1];
+	return program.instrument[instrumentId];
+}
+
 function updateToRoutine(update, state) {
 	// moduleUpdate and channelState
 	var note = update.note || state.note;
 	var newRoutine;
+	var [highNum, lowNum] = getDutyRatio(update.instrument);
 				
 	if (update.note === -1){
 		state.tmpEffect = false;
@@ -93,7 +115,7 @@ function updateToRoutine(update, state) {
 				var arp1 = update.parameter >> 8;
 				var arp2 = update.parameter % 16;
 				
-				newRoutine = new ArpeggioNote(note + 12, arp1, arp2);
+				newRoutine = new ArpeggioNote(note + 12, arp1, arp2, highNum, lowNum);
 				state.tmpEffect = true;
 				break;
 			default: // Unsupported effect, aliased to 0
@@ -101,7 +123,7 @@ function updateToRoutine(update, state) {
 				if (update.note !== 0 || state.tmpEffect) {
 					// Actual new flat note change (case 0 + update.note)
 					// OR Effect is temporary and has not been reinstated (case 0 + state.tmpEffect)
-					newRoutine = new FlatNote(note + 12);
+					newRoutine = new FlatNote(note + 12, highNum, lowNum);
 					state.tmpEffect = false;
 				}
 				// 0 with no effect means it's just a noOp
