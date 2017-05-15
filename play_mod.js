@@ -51,20 +51,20 @@ var playerPromise = readFile(filePath).then(function(data) {
 					case 1: // Arpeggio
 						var arp1 = update.parameter >> 8;
 						var arp2 = update.parameter % 16;
-						sequence.add(sequenceCounter, channels[channel], new ArpeggioNote(note + 12, arp1, arp2));
+						sequence.add(sequenceCounter, channel, new ArpeggioNote(note + 12, arp1, arp2));
 						
 						state.tmpEffect = true;
 						break;
 					default: // Unsupported effect, aliased to 0
 					case 0: // No effect
 						if (update.note === -1){
-							sequence.add(sequenceCounter, channels[channel], new StopRoutine());
+							sequence.add(sequenceCounter, channel, new StopRoutine());
 							
 							state.tmpEffect = false;
 						} else if (update.note !== 0 || state.tmpEffect) {
 							// Actual new flat note change (case 0 + update.note)
 							// OR Effect is temporary and has not been reinstated (case 0 + state.tmpEffect)
-							sequence.add(sequenceCounter, channels[channel], new FlatNote(note + 12));
+							sequence.add(sequenceCounter, channel, new FlatNote(note + 12));
 							
 							state.tmpEffect = false;
 						}

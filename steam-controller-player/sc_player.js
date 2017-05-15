@@ -44,8 +44,8 @@ class SteamControllerPlayer {
 					
 					// Set the channel pointed by a routine to play that routine.
 					updates.channelUpdates.forEach(function(channelUpdate){
-						console.log("Channel #" + channelUpdate.channel.channelId + ":" + channelUpdate.routine)
-						channelUpdate.channel.routine = channelUpdate.routine;
+						console.log("Channel #" + channelUpdate.channel + ":" + channelUpdate.routine)
+						sc_player.channels[channelUpdate.channel].routine = channelUpdate.routine;
 					})
 					
 					if (updates.timerUpdate) timer.timing = updates.timerUpdate;
@@ -139,16 +139,14 @@ class SteamControllerSequence {
 		this.lastLine = 0;
 	}
 
-	add(lineNum, channel, routine) {
-		if(!channel instanceof SteamControllerChannel){
-			throw "SteamControllerSequence#add called with an invalid channel."
-		} else if(!routine instanceof Routines.ChannelRoutine){
+	add(lineNum, channelNum, routine) {
+		if(!routine instanceof Routines.ChannelRoutine){
 			throw "SteamControllerSequence#add called with an invalid routine."
 		}
 
 		if(!this.channelUpdates[lineNum]) this.channelUpdates[lineNum] = [];
 		this.channelUpdates[lineNum].push({
-			channel: channel,
+			channel: channelNum,
 			routine: routine,
 		})
 
