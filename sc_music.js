@@ -50,4 +50,5 @@ class ArpeggioNote extends Routines.CyclicPattern {
 
 module.exports.FlatNote = FlatNote;
 module.exports.ArpeggioNote = ArpeggioNote;
-module.exports.StopRoutine = Routines.StopRoutine
+module.exports.StopRoutine = Routines.StopRoutine;
+module.exports.Pulse = Routines.Pulse;

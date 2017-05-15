@@ -43,6 +43,16 @@ class StopRoutine extends RawFeedback{
 	}
 }
 
+class Pulse extends RawFeedback {
+	constructor(microDuration) {
+		super(microDuration, 0,1);
+	}
+	
+	toString() {
+		return "PULSE";
+	}
+}
+
 class ConstantFrequency extends ChannelRoutine {
 	constructor(frequency, hiRate = 1, loRate = 1) {
 		super();
@@ -71,6 +81,7 @@ class CyclicPattern extends ChannelRoutine {
 
 module.exports.ChannelRoutine = ChannelRoutine;
 module.exports.StopRoutine = StopRoutine;
+module.exports.Pulse = Pulse;
 module.exports.RawFeedback = RawFeedback;
 module.exports.ConstantFrequency = ConstantFrequency;
 module.exports.CyclicPattern = CyclicPattern;
