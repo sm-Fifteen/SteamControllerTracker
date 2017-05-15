@@ -12,6 +12,11 @@ program
 	.arguments('<trackerFile>')
 	.description('Reads a tracker file (MOD/XM/IT/S3M, etc.) and ' +
 			'attempts to play it on a connected Steam Controller')
+	.option('-c, --channels <chan0,chan1,chan2>', 'Which channels from the tracker file are to be played', function(listString) {
+		return listString.split(",").map(function(num){
+			return parseInt(num)
+		});
+	})
 	
 program.parse(process.argv);
 	
@@ -29,8 +34,10 @@ var playerPromise = readFile(filePath).then(function(data) {
 }).then(function(module){
 	var sequence = new SteamControllerSequence();
 	var channels = SteamControllerPlayer.channels;
-	var maxChannels = Math.max(module.num_channels, channels.length)
 	var sequenceCounter = 0;
+	
+	var channelMap = program.channels || [0,1]; // TODO : Generate 0..n for n channels
+	channelMap = channelMap.slice(0, channels.length)
 
 	var tempo = module.current_tempo;
 	var speed = module.current_speed;
@@ -42,8 +49,8 @@ var playerPromise = readFile(filePath).then(function(data) {
 		for(var row = 0; row < module.get_pattern_num_rows(pattern); row++) {
 			module.set_position_order_row(order, row);
 
-			for(var channel = 0; channel < maxChannels; channel++) {
-				const update = module.get_pattern_row_channel(pattern, row, channel)
+			for(var channel = 0; channel < channelMap.length; channel++) {
+				const update = module.get_pattern_row_channel(pattern, row, channelMap[channel])
 				var state = channelState[channel] || {};
 				var note = update.note || state.note;
 			
