@@ -30,7 +30,7 @@ var filePath = program.args[0];
 var readFile = Promise.promisify(require('fs').readFile);
 
 var playerPromise = readFile(filePath).then(function(data) {
-    return new OpenMTP_Module(data);
+	return new OpenMTP_Module(data);
 }).then(function(module){
 	var sequence = new SteamControllerSequence();
 	var channels = SteamControllerPlayer.channels;
@@ -47,9 +47,8 @@ var playerPromise = readFile(filePath).then(function(data) {
 	for(var order = module.current_order; order < module.num_orders; order++) {
 		console.log("Parsing file (pattern " + (order + 1) + "/" + module.num_orders + ")");
 		const pattern = module.get_order_pattern(order);
+		
 		for(var row = 0; row < module.get_pattern_num_rows(pattern); row++) {
-			module.set_position_order_row(order, row);
-
 			for(var channel = 0; channel < channelMap.length; channel++) {
 				const update = module.get_pattern_row_channel(pattern, row, channelMap[channel])
 				var state = channelState[channel] || {};
