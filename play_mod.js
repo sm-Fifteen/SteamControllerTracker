@@ -76,7 +76,7 @@ var playerPromise = readFile(filePath).then(function(data) {
 	var orderStart = program.startPosition || 0;
 	var orderStop = (program.stopAfter)?(orderStart + program.stopAfter):module.num_orders;
 	
-	for(var order = program.startPosition; order < orderStop; order++) {
+	for(var order = orderStart; order < orderStop; order++) {
 		console.log("Parsing file (pattern " + (order + 1) + "/" + module.num_orders + ")");
 		const pattern = module.get_order_pattern(order);
 		
