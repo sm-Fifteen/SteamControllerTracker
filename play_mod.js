@@ -17,6 +17,8 @@ program
 			return parseInt(num)
 		});
 	})
+	.option('-s, --start-position <orderNum>', 'How many patterns after the beginning of the song should the player start at.', parseInt)
+	.option('-S, --stop-after <nPatterns>', 'How many patterns should be played before stopping.', parseInt),
 	
 program.parse(process.argv);
 	
@@ -43,8 +45,11 @@ var playerPromise = readFile(filePath).then(function(data) {
 	var speed = module.current_speed;
 	var channelState = {/* Per channel : {note:0, tmpEffect:false} */}
 	var effectMemory = {/* Per channel : {[effect]:parameter} */}
-
-	for(var order = module.current_order; order < module.num_orders; order++) {
+	
+	var orderStart = program.startPosition || 0;
+	var orderStop = (program.stopAfter)?(orderStart + program.stopAfter):module.num_orders;
+	
+	for(var order = program.startPosition; order < orderStop; order++) {
 		console.log("Parsing file (pattern " + (order + 1) + "/" + module.num_orders + ")");
 		const pattern = module.get_order_pattern(order);
 		
