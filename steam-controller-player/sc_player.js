@@ -6,17 +6,15 @@ var _ = require("lodash")
 
 class SteamControllerPlayer {
 	constructor() {
-		this.devices = [];
+		var usbDevices = SteamControllerDevice.listAvailable();
 
-		// TODO : Multiple devices
-		var device = usb.findByIds(0x28de, 0x1102);
-
-		this.devices.push(new SteamControllerDevice(device));
+		this.devices = _.map(usbDevices, function(usbDevice){
+			return new SteamControllerDevice(usbDevice);
+		})
 	}
 
 	get channels() {
-		// FIXME
-		return this.devices[0].channels;
+		return _.chain(this.devices).map("channels").flatten().value();
 	}
 
 	playSequence(sequence, beatsPerMinute, linesPerBeat, ticksPerLine) {
@@ -60,8 +58,9 @@ class SteamControllerPlayer {
 	}
 	
 	nextTick(duration) {		
-		// TODO : Multiple devices
-		return this.devices[0].nextTick(duration);
+		return Promise.all(_.map(this.devices, function(device) {
+			return device.nextTick(duration);
+		}))
 	}
 	
 	mute() {
