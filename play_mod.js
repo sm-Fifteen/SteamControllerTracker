@@ -93,10 +93,13 @@ var playerPromise = readFile(filePath).then(function(data) {
 		}
 	}
 
+	SteamControllerPlayer.startRegistering();
+	
 	// Using clasic tempo mode, see OpenMPT wiki
 	// https://wiki.openmpt.org/Manual:_Song_Properties#Tempo_Mode
 	return SteamControllerPlayer.playSequence(sequence, tempo, 24/speed, speed);
 }).finally(function(){
+	SteamControllerPlayer.stopRegistering();
 	return SteamControllerPlayer.mute();
 })
 

@@ -78,11 +78,34 @@ class SteamControllerDevice {
 	// On each device tick, for each channel, run nextTickFn on the current routine
 }
 
-SteamControllerDevice.listAvailable = function() {
-	// TODO : Wireless receiver
-	return _.filter(usb.getDeviceList(), function(usbDevice) {
-		return (usbDevice.deviceDescriptor.idVendor === 0x28de && usbDevice.deviceDescriptor.idProduct === 0x1102)
+SteamControllerDevice.registerAll = function() {
+	var deviceList = usb.getDeviceList();
+	deviceList = _.map(deviceList, SteamControllerDevice.register);
+	deviceList = _.filter(deviceList, function(v){return !!v});
+	return deviceList;
+}
+
+SteamControllerDevice.register = function(usbDevice) {
+	if(SteamControllerDevice.isSteamController(usbDevice)) {
+		return new SteamControllerDevice(usbDevice);
+	}
+}
+
+SteamControllerDevice.startHotplug = function(callback) {
+	usb.on('attach', function(usbDevice){
+		var scDevice = SteamControllerDevice.register(usbDevice);
+		if(scDevice) callback(scDevice);
 	})
+}
+
+SteamControllerDevice.stopHotplug = function() {
+	usb.removeAllListeners();
+}
+
+SteamControllerDevice.isSteamController = function(usbDevice) {
+	// TODO : Wireless receiver
+	return usbDevice.deviceDescriptor.idVendor === 0x28de &&
+			usbDevice.deviceDescriptor.idProduct === 0x1102;
 }
 
 module.exports.SteamControllerDevice = SteamControllerDevice;

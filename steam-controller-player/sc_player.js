@@ -1,20 +1,28 @@
 var Promise = require("bluebird");
-var usb = require('usb');
 var {SteamControllerDevice, SteamControllerChannel} = require("./sc_device.js")
 var Routines = require("./sc_routine.js")
 var _ = require("lodash")
 
 class SteamControllerPlayer {
 	constructor() {
-		var usbDevices = SteamControllerDevice.listAvailable();
-
-		this.devices = _.map(usbDevices, function(usbDevice){
-			return new SteamControllerDevice(usbDevice);
-		})
+		this.devices = [];
 	}
 
 	get channels() {
 		return _.chain(this.devices).map("channels").flatten().value();
+	}
+	
+	startRegistering() {
+		const devices = SteamControllerDevice.registerAll();
+		this.devices = devices;
+		
+		SteamControllerDevice.startHotplug(function(scDevice){
+			devices.push(scDevice);
+		})
+	}
+	
+	stopRegistering() {
+		SteamControllerDevice.stopHotplug();
 	}
 
 	playSequence(sequence, beatsPerMinute, linesPerBeat, ticksPerLine) {
