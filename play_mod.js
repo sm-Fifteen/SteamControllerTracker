@@ -62,11 +62,9 @@ var playerPromise = readFile(filePath).then(function(data) {
 	return new OpenMTP_Module(data);
 }).then(function(module){
 	var sequence = new SteamControllerSequence();
-	var channels = SteamControllerPlayer.channels;
 	var sequenceCounter = 0;
 	
 	var channelMap = program.channels || [1,2]; // TODO : Generate 1..n+1 for n channels
-	channelMap = channelMap.slice(0, channels.length)
 
 	var tempo = module.current_tempo;
 	var speed = module.current_speed;
