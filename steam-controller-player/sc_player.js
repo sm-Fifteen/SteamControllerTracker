@@ -42,13 +42,19 @@ class SteamControllerPlayer {
 					
 					// Set the channel pointed by a routine to play that routine.
 					updates.channelUpdates.forEach(function(channelUpdate){
-						console.log("Channel #" + channelUpdate.channel + ":" + channelUpdate.routine)
-						sc_player.channels[channelUpdate.channel].routine = channelUpdate.routine;
+						var channel = sc_player.channels[channelUpdate.channel];
+						if (channel) {
+							console.log("Channel #" + channelUpdate.channel + ":" + channelUpdate.routine);
+							channel.routine = channelUpdate.routine;
+						} else {
+							// Print absent channels with the "Dim" modifier
+							console.log("\x1B[2m" + "Channel #" + channelUpdate.channel + ":" + channelUpdate.routine + "\x1B[0m");
+						}
 					})
 					
 					if (updates.timerUpdate) timer.timing = updates.timerUpdate;
 				}
-		
+
 				yield sc_player.nextTick(timer.tickDuration)
 				timer.tick++
 			}
@@ -57,7 +63,9 @@ class SteamControllerPlayer {
 		return chainHandle(sequencePlayer.next());
 	}
 	
-	nextTick(duration) {		
+	nextTick(duration) {
+		if(this.devices.length == 0) return Promise.delay(duration);
+		
 		return Promise.all(_.map(this.devices, function(device) {
 			return device.nextTick(duration);
 		}))
