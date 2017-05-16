@@ -2,6 +2,7 @@ var Promise = require("bluebird");
 var {ChannelRoutine, RawFeedback} = require("./sc_routine.js");
 var packetFactory = require('./sc_packets.js');
 var usb = require('usb');
+var _ = require("lodash")
 
 
 class SteamControllerChannel {
@@ -75,6 +76,13 @@ class SteamControllerDevice {
 		})
 	}
 	// On each device tick, for each channel, run nextTickFn on the current routine
+}
+
+SteamControllerDevice.listAvailable = function() {
+	// TODO : Wireless receiver
+	return _.filter(usb.getDeviceList(), function(usbDevice) {
+		return (usbDevice.deviceDescriptor.idVendor === 0x28de && usbDevice.deviceDescriptor.idProduct === 0x1102)
+	})
 }
 
 module.exports.SteamControllerDevice = SteamControllerDevice;
