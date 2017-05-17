@@ -17,14 +17,26 @@ var midiFrequency  = [
 
 function displayNote(note) {
 	const noteBaseNameArray = [" C","C#"," D","D#"," E"," F","F#"," G","G#"," A","A#"," B"];
-	var frequency = midiFrequency[note];
 
 	return 	noteBaseNameArray[note % 12] + Math.floor((note/12) -1)
 }
 
+function getFrequency(note, semitoneFraction = 0, semitoneDivision = 16) {
+	if (semitoneFraction === 0) {
+		return midiFrequency[note];
+	} else {
+		note += Math.floor(semitoneFraction / semitoneDivision);
+		semitoneFraction = semitoneFraction % semitoneDivision;
+		note += -6*12 + 10; // Note needs to be relative to A4, but midi starts at C-1
+		
+		// midC * 2^(note/12)
+		return midiFrequency[62] * Math.pow(2, note/12 + semitoneFraction/(12*semitoneDivision));
+	}
+}
+
 class FlatNote extends Routines.ConstantFrequency {
 	constructor(midiNote, hiRate = 1, loRate = 1) {
-		super(midiFrequency[midiNote], hiRate, loRate)
+		super(getFrequency(midiNote), hiRate, loRate)
 		this.string = displayNote(midiNote);
 	}
 	
@@ -36,9 +48,9 @@ class FlatNote extends Routines.ConstantFrequency {
 class ArpeggioNote extends Routines.CyclicPattern {
 	constructor(midiNote, x, y, hiRate = 1, loRate = 1) {
 		super([
-			Routines.packetFromFrequency(midiFrequency[midiNote], -1, hiRate, loRate),
-			Routines.packetFromFrequency(midiFrequency[midiNote + x], -1, hiRate, loRate),
-			Routines.packetFromFrequency(midiFrequency[midiNote + y], -1, hiRate, loRate),			
+			Routines.packetFromFrequency(getFrequency(midiNote), -1, hiRate, loRate),
+			Routines.packetFromFrequency(getFrequency(midiNote + x), -1, hiRate, loRate),
+			Routines.packetFromFrequency(getFrequency(midiNote + y), -1, hiRate, loRate),			
 		]);
 		this.string = displayNote(midiNote) + "," + displayNote(midiNote+x) + "," + displayNote(midiNote+y)
 	}
@@ -48,7 +60,32 @@ class ArpeggioNote extends Routines.CyclicPattern {
 	}
 }
 
+class PortamentoNote extends Routines.SlidePattern {
+	constructor(midiNote, slideSlope, speed, state, hiRate = 1, loRate = 1, semitoneDivisions = 16) {
+		const packetList = [];
+		
+		var subnoteOffset = state.subnoteOffset || 0;
+		
+		// TODO : Add amiga slides (requires using period tables instead of frequency), semitoneDivisions = 0
+		
+		for(var i = 0; i < speed; i++) {
+			subnoteOffset += slideSlope;
+			packetList.push(Routines.packetFromFrequency(getFrequency(midiNote, subnoteOffset, semitoneDivisions), -1, hiRate, loRate));
+		}
+		
+		state.subnoteOffset = subnoteOffset;
+		
+		super(packetList);
+		this.string = displayNote(midiNote) + ((slideSlope > 0)?"//":"\\")
+	}
+	
+	toString() {
+		return this.string;
+	}
+}
+
 module.exports.FlatNote = FlatNote;
 module.exports.ArpeggioNote = ArpeggioNote;
+module.exports.PortamentoNote = PortamentoNote;
 module.exports.StopRoutine = Routines.StopRoutine;
 module.exports.Pulse = Routines.Pulse;

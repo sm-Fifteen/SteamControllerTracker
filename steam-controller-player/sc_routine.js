@@ -80,10 +80,28 @@ class CyclicPattern extends ChannelRoutine {
 	}
 }
 
+class SlidePattern extends ChannelRoutine {
+	constructor(packets) {
+		super();
+		this.packets = packets;
+	}
+
+	nextTickFn() {
+		var idx = this.ticksSinceStart;
+		this.ticksSinceStart++;
+		if(idx < this.packets.length) {
+			return this.packets[idx];
+		}
+	}
+}
+
+
+
 module.exports.ChannelRoutine = ChannelRoutine;
 module.exports.StopRoutine = StopRoutine;
 module.exports.Pulse = Pulse;
 module.exports.RawFeedback = RawFeedback;
 module.exports.ConstantFrequency = ConstantFrequency;
 module.exports.CyclicPattern = CyclicPattern;
+module.exports.SlidePattern = SlidePattern;
 module.exports.packetFromFrequency = FeedbackPacket.createFromFrequency;

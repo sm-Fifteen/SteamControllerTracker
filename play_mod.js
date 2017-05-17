@@ -1,5 +1,5 @@
 var {SteamControllerSequence, SteamControllerPlayer} = require("steam-controller-player");
-var {StopRoutine, Pulse, ArpeggioNote, FlatNote} = require("./sc_music.js");
+var {StopRoutine, Pulse, ArpeggioNote, PortamentoNote, FlatNote} = require("./sc_music.js");
 
 const OpenMTP_Module = require('node-libopenmpt');
 var program = require('commander');
@@ -61,7 +61,7 @@ var playerPromise = readFile(filePath).then(function(data) {
 
 	var tempo = module.current_tempo;
 	var speed = module.current_speed;
-	var channelState = {/* Per channel : {note:0, tmpEffect:false} */}
+	var channelState = {/* Per channel : {note:0, tmpEffect:false, subnoteOffset:0} */}
 	var effectMemory = {/* Per channel : {[effect]:parameter} */}
 	
 	var orderStart = program.startPosition || 0;
@@ -75,11 +75,13 @@ var playerPromise = readFile(filePath).then(function(data) {
 			for(var channel = 0; channel < channelMap.length; channel++) {
 				const update = module.get_pattern_row_channel(pattern, row, channelMap[channel]-1)
 				var state = channelState[channel] || {};
+				var memory = effectMemory[channel] || {};
 				
-				var routine = updateToRoutine(update, state);
+				var routine = updateToRoutine(update, state, memory);
 				if(routine) sequence.add(sequenceCounter, channel, routine);
 				
 				channelState[channel] = state; // Update to routine affects the state
+				effectMemory[channel] = memory; // And the effect memory
 			}
 			
 			sequenceCounter++;
@@ -107,8 +109,8 @@ function getInstrument(instrumentId) {
 	return program.instrument[instrumentId];
 }
 
-function updateToRoutine(update, state) {
-	// moduleUpdate and channelState
+function updateToRoutine(update, state, memory) {
+	// moduleUpdate, channelState and channelMemory
 	const noteOffset = 12 * (program.octaveOffset || 0);
 	var note = update.note || state.note;
 	var newRoutine;
@@ -127,14 +129,26 @@ function updateToRoutine(update, state) {
 				var arp2 = update.parameter % 16;
 				
 				newRoutine = new ArpeggioNote(note + noteOffset, arp1, arp2, instrument.highNum, instrument.lowNum);
+				state.subnoteOffset = 0;
 				state.tmpEffect = true;
 				break;
+			case 2: // Portamento up
+			case 3: // Portamento down
+				var slideStep = update.parameter || memory[update.effect];
+				if (update.effect === 3) slideStep = -slideStep;
+				
+				newRoutine = new PortamentoNote(note + noteOffset, slideStep, 3, state, instrument.highNum, instrument.lowNum);
+				state.tmpEffect = false;
+				memory[update.effect] = update.parameter;
+				
+				break
 			default: // Unsupported effect, aliased to 0
 			case 0: // No effect
 				if (update.note !== 0 || state.tmpEffect) {
 					// Actual new flat note change (case 0 + update.note)
 					// OR Effect is temporary and has not been reinstated (case 0 + state.tmpEffect)
 					newRoutine = new FlatNote(note + noteOffset, instrument.highNum, instrument.lowNum);
+					state.subnoteOffset = 0;
 					state.tmpEffect = false;
 				}
 				// 0 with no effect means it's just a noOp
