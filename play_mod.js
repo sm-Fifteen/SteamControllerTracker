@@ -19,19 +19,17 @@ program
 	})
 	.option('-s, --start-position <orderNum>', 'How many patterns after the beginning of the song should the player start at.', parseInt)
 	.option('-S, --stop-after <nPatterns>', 'How many patterns should be played before stopping.', parseInt)
-	.option('-i, --instrument <instrument=high:low>', 'What square wave duty cycle should an instrument be mapped to. Instrument numbering starts at 1.', function(instrStr, instrDict) {
+	.option('-i, --instrument <instrument=high:low|instrument=pulseDuration>', 'What square wave duty cycle should an instrument be mapped to or the duration of the pulse in microseconds. Instrument numbering starts at 1.', function(instrStr, instrDict) {
 		var [instrKey, instrRatio] = instrStr.split("=");
 		if(!instrKey || !instrRatio) throw new Error("Bad instrument option '" + instrStr + "'")
 		
 		var [highNum, lowNum] = instrRatio.split(":");
-		if(!highNum || !lowNum) throw new Error("Bad instrument option '" + instrStr + "'")
+		if(lowNum === undefined) {
+			instrDict[instrKey] = {pulse : parseInt(highNum)}
+		} else {
+			instrDict[instrKey] = {highNum: parseInt(highNum), lowNum: parseInt(lowNum)}
+		}
 		
-		instrDict[instrKey] = [parseInt(highNum), parseInt(lowNum)];
-		return instrDict;
-	}, {})
-	.option('-p, --pulse <instrument>', 'Interpret that instrument as a pulse rather than a tone, overrides --instrument. Instrument numbering starts at 1.', function(instrId, instrDict){
-		instrId = parseInt(instrId);
-		instrDict[instrId] = [0, 0];
 		return instrDict;
 	}, {})
 	.option('-O, --octave-offset <offset>', 'Shift all the notes up or down by n octaves. This is useful if you want to avoid notes like A440 (A4), which sounds expecially nasty on the Steam controller for some reason.', parseInt)
@@ -48,11 +46,6 @@ if (program.args.length === 0) {
 	program.outputHelp();
 	return 1;
 }
-
-Object.keys(program.pulse).forEach(function(instrument) {
-	// Pulse instruments override regular ones
-	program.instrument[instrument] = program.pulse[instrument];
-})
 
 var filePath = program.args[0];
 
@@ -107,9 +100,10 @@ process.on('SIGINT', function() {
 	playerPromise.cancel();
 })
 
-function getDutyRatio(instrumentId) {
-	if (!program.instrument) return [1,1];
-	if (!program.instrument[instrumentId]) return [1,1];
+function getInstrument(instrumentId) {
+	if (!program.instrument || !program.instrument[instrumentId]) {
+		return {highNum: 1, lowNum: 1};
+	}
 	return program.instrument[instrumentId];
 }
 
@@ -118,21 +112,21 @@ function updateToRoutine(update, state) {
 	const noteOffset = 12 * (program.octaveOffset || 0);
 	var note = update.note || state.note;
 	var newRoutine;
-	var [highNum, lowNum] = getDutyRatio(update.instrument);
+	var instrument = getInstrument(update.instrument);
 				
 	if (update.note === -1){
 		state.tmpEffect = false;
 		newRoutine = new StopRoutine();
-	} else if (highNum == 0 || lowNum == 0) {
+	} else if (instrument.pulse) {
 		state.tmpEffect = false;
-		newRoutine = new Pulse(1000); // TODO : Less arbitrary value/react to note?
+		newRoutine = new Pulse(instrument.pulse);
 	} else {
 		switch(update.effect) {
 			case 1: // Arpeggio
 				var arp1 = update.parameter >> 8;
 				var arp2 = update.parameter % 16;
 				
-				newRoutine = new ArpeggioNote(note + noteOffset, arp1, arp2, highNum, lowNum);
+				newRoutine = new ArpeggioNote(note + noteOffset, arp1, arp2, instrument.highNum, instrument.lowNum);
 				state.tmpEffect = true;
 				break;
 			default: // Unsupported effect, aliased to 0
@@ -140,7 +134,7 @@ function updateToRoutine(update, state) {
 				if (update.note !== 0 || state.tmpEffect) {
 					// Actual new flat note change (case 0 + update.note)
 					// OR Effect is temporary and has not been reinstated (case 0 + state.tmpEffect)
-					newRoutine = new FlatNote(note + noteOffset, highNum, lowNum);
+					newRoutine = new FlatNote(note + noteOffset, instrument.highNum, instrument.lowNum);
 					state.tmpEffect = false;
 				}
 				// 0 with no effect means it's just a noOp

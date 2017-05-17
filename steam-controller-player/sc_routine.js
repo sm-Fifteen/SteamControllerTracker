@@ -46,10 +46,11 @@ class StopRoutine extends RawFeedback{
 class Pulse extends RawFeedback {
 	constructor(microDuration) {
 		super(microDuration, 0,1);
+		this.string = "<"+ microDuration +"µs>"
 	}
 	
 	toString() {
-		return "PULSE";
+		return this.string;
 	}
 }
 
