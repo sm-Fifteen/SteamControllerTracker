@@ -61,22 +61,21 @@ class ArpeggioNote extends Routines.CyclicPattern {
 }
 
 class PortamentoNote extends Routines.SlidePattern {
-	constructor(midiNote, slideSlope, speed, state, hiRate = 1, loRate = 1, semitoneDivisions = 16) {
-		const packetList = [];
-		
+	constructor(midiNote, slideSlope, speed, state, hiRate = 1, loRate = 1, semitoneDivisions = 16) {		
 		var subnoteOffset = state.subnoteOffset || 0;
 		
 		// TODO : Add amiga slides (requires using period tables instead of frequency), semitoneDivisions = 0
+		const packetList = [];
 		
 		for(var i = 0; i < speed; i++) {
-			subnoteOffset += slideSlope;
 			packetList.push(Routines.packetFromFrequency(getFrequency(midiNote, subnoteOffset, semitoneDivisions), -1, hiRate, loRate));
+			subnoteOffset += slideSlope;
 		}
 		
 		state.subnoteOffset = subnoteOffset;
-		
 		super(packetList);
-		this.string = displayNote(midiNote) + ((slideSlope > 0)?"//":"\\")
+		
+		this.string = displayNote(midiNote) + ((slideSlope > 0)?"//":"\\\\") + "(" + subnoteOffset + "/" + semitoneDivisions + ")"
 	}
 	
 	toString() {

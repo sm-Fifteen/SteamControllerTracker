@@ -139,7 +139,7 @@ function updateToRoutine(update, state, memory) {
 				
 				newRoutine = new PortamentoNote(note + noteOffset, slideStep, 3, state, instrument.highNum, instrument.lowNum);
 				state.tmpEffect = false;
-				memory[update.effect] = update.parameter;
+				if (update.parameter !== 0) memory[update.effect] = update.parameter;
 				
 				break
 			default: // Unsupported effect, aliased to 0
