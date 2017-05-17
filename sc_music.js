@@ -83,8 +83,41 @@ class PortamentoNote extends Routines.SlidePattern {
 	}
 }
 
+class VibratoNote extends Routines.ChannelRoutine {
+	constructor(midiNote, vibratoSpeed, vibratoAmplitude, state, hiRate = 1, loRate = 1, semitoneDivisions = 16) {		
+		super();
+		
+		this.vibratoSpeed = vibratoSpeed;
+		this.vibratoAmplitude = vibratoAmplitude;
+		this.hiRate = hiRate;
+		this.loRate = loRate;
+		
+		// http://modplug.sourceforge.net/ohm/OHM%201.19.1.pdf
+		// vibratoSpeed/64 oscillation progress per tick on IT using the old effects.
+		// Gotta start somewhere
+		// TODO : Make that configurable?
+		this.baseFreq = getFrequency(midiNote);
+		this.freqDelta = getFrequency(midiNote, this.vibratoAmplitude, 64) - this.baseFreq;
+		
+		this.string = displayNote(midiNote) + "~"
+	}
+	
+	nextTickFn() {
+		var phaseIdx = (this.ticksSinceStart * this.vibratoSpeed) % 64;
+		var modAmplitude = Math.sin(phaseIdx/64 * Math.PI);
+		this.ticksSinceStart++;
+		
+		return Routines.packetFromFrequency(this.baseFreq + this.freqDelta * modAmplitude, -1, this.hiRate, this.loRate)
+	}
+	
+	toString() {
+		return this.string;
+	}
+}
+
 module.exports.FlatNote = FlatNote;
 module.exports.ArpeggioNote = ArpeggioNote;
 module.exports.PortamentoNote = PortamentoNote;
+module.exports.VibratoNote = VibratoNote;
 module.exports.StopRoutine = Routines.StopRoutine;
 module.exports.Pulse = Routines.Pulse;

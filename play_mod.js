@@ -1,5 +1,5 @@
 var {SteamControllerSequence, SteamControllerPlayer} = require("steam-controller-player");
-var {StopRoutine, Pulse, ArpeggioNote, PortamentoNote, FlatNote} = require("./sc_music.js");
+var {StopRoutine, Pulse, ArpeggioNote, PortamentoNote, VibratoNote, FlatNote} = require("./sc_music.js");
 
 const OpenMTP_Module = require('node-libopenmpt');
 var program = require('commander');
@@ -125,8 +125,8 @@ function updateToRoutine(update, state, memory) {
 	} else {
 		switch(update.effect) {
 			case 1: // Arpeggio
-				var arp1 = update.parameter >> 8;
-				var arp2 = update.parameter % 16;
+				var arp1 = update.parameter >> 4;
+				var arp2 = update.parameter & 0x0F;
 				
 				newRoutine = new ArpeggioNote(note + noteOffset, arp1, arp2, instrument.highNum, instrument.lowNum);
 				state.subnoteOffset = 0;
@@ -138,10 +138,28 @@ function updateToRoutine(update, state, memory) {
 				if (update.effect === 3) slideStep = -slideStep;
 				
 				newRoutine = new PortamentoNote(note + noteOffset, slideStep, 3, state, instrument.highNum, instrument.lowNum);
+				// State.subnoteOffset is modified by this.
 				state.tmpEffect = false;
 				if (update.parameter !== 0) memory[update.effect] = update.parameter;
 				
-				break
+				break;
+			case 5: // Vibrato
+				if(!memory[update.effect]) memory[update.effect] = {};
+				var parameter = (update.parameter < 0)?(Math.abs(update.parameter) + 0x80):update.parameter; // TODO : Fix this in node-libopenmpt
+				
+				var vibratoSpeed = parameter >> 4 || memory[update.effect].speed;
+				var vibratoAmplitude = parameter & 0x0F || memory[update.effect].amplitude;
+				
+				// Leave the previous vibrato running if nothing has changed
+				if (state.note !== note || vibratoSpeed !== memory[update.effect].speed || vibratoAmplitude !== memory[update.effect].amplitude) {
+					newRoutine = new VibratoNote(note + noteOffset, vibratoSpeed, vibratoAmplitude, state, instrument.highNum, instrument.lowNum);
+				}
+				
+				state.tmpEffect = true;
+				if(vibratoSpeed) memory[update.effect].speed = vibratoSpeed;
+				if(vibratoAmplitude) memory[update.effect].amplitude = vibratoAmplitude;
+				
+				break;
 			default: // Unsupported effect, aliased to 0
 			case 0: // No effect
 				if (update.note !== 0 || state.tmpEffect) {
