@@ -1,14 +1,17 @@
 {
   "name": "steam-controller-tracker",
-  "version": "0.2.0",
+  "version": "0.5.0",
   "description": "An offshot of the SteamControllerSigner that aims to take advantage of the SC's dual pulse channel nature",
-  "main": "sc_test.js",
+  "main": "play_mod.js",
   "dependencies": {
     "commander": "^2.9.0",
-    "node-libopenmpt": "sm-Fifteen/node-libopenmpt",
-    "steam-controller-player": "file:./steam-controller-player"
+    "lodash": "^4.17.4",
+    "node-libopenmpt": "sm-Fifteen/node-libopenmpt"
   },
-  "devDependencies": {},
+  "bundledDependencies": ["node-libopenmpt", "steam-controller-player"],
+  "engines": {
+    "node": "^7.10.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sm-Fifteen/SteamControllerTracker.git"
