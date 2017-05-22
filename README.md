@@ -12,8 +12,8 @@ Benefits over the Steam Controller Singer
 
 Setup
 -----
-If you already have Node.js (which you can download from [here][2]), just download a copy of the source on Github,
-run `npm install` in the directory and run `node play_mod.js`.
+You'll need Node.js (which you can download from [here][2]), as well as [Python 2][4] and [git][5] for the initial setup
+process. Just download a copy of the source on Github, run `npm install` in the directory and run `node play_mod.js`.
 
 Why do I need Node.js?
 ----------------------
@@ -48,3 +48,5 @@ External documentation
 [1]:https://sourceforge.net/projects/steam-controller-singer/
 [2]:https://nodejs.org
 [3]:https://github.com/sm-Fifteen/SteamControllerTracker/releases
+[4]:https://www.python.org/downloads/
+[5]:https://git-scm.com/downloads
