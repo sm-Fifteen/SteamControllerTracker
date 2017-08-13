@@ -70,21 +70,31 @@ var playerPromise = readFile(filePath).then(function(data) {
 	for(var order = orderStart; order < orderStop; order++) {
 		console.log("Parsing file (pattern " + (order + 1) + "/" + module.num_orders + ")");
 		const pattern = module.get_order_pattern(order);
+		var breakPattern = false;
 		
 		for(var row = 0; row < module.get_pattern_num_rows(pattern); row++) {
-			for(var channel = 0; channel < channelMap.length; channel++) {
-				const update = module.get_pattern_row_channel(pattern, row, channelMap[channel]-1)
-				var state = channelState[channel] || {};
-				var memory = effectMemory[channel] || {};
+			for(var channel = 1; channel <= module.num_channels; channel++) {
+				const update = module.get_pattern_row_channel(pattern, row, channel-1)
+				// Look for song effects like speed changes even on channels that aren't played
+				if(update.effect == 14) { // Break pattern
+					breakPattern = true;
+				}
+				
+				var mapIndex = channelMap.indexOf(channel);
+				if (mapIndex === -1) continue;
+				
+				var state = channelState[mapIndex] || {};
+				var memory = effectMemory[mapIndex] || {};
 				
 				var routine = updateToRoutine(update, state, memory);
-				if(routine) sequence.add(sequenceCounter, channel, routine);
+				if(routine) sequence.add(sequenceCounter, mapIndex, routine);
 				
-				channelState[channel] = state; // Update to routine affects the state
-				effectMemory[channel] = memory; // And the effect memory
+				channelState[mapIndex] = state; // Update to routine affects the state
+				effectMemory[mapIndex] = memory; // And the effect memory
 			}
 			
 			sequenceCounter++;
+			if (breakPattern) break;
 		}
 	}
 
@@ -136,7 +146,7 @@ function updateToRoutine(update, state, memory) {
 			case 2: // Portamento up
 			case 3: // Portamento down
 				if (noteReset) state.subnoteOffset = 0;
-				var slideStep = update.parameter || memory[2]; // Up and down share the same memory
+				var slideStep = update.parameter || memory[update.effect]; // TODO : Up and down should share the same memory
 				if (update.effect === 3) slideStep = -slideStep;
 				
 				newRoutine = new PortamentoNote(note + noteOffset, slideStep, 3, state, instrument.highNum, instrument.lowNum);
