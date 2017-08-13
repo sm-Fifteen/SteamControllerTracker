@@ -59,13 +59,16 @@ var playerPromise = readFile(filePath).then(function(data) {
 	
 	var channelMap = program.channels || [1,2]; // TODO : Generate 1..n+1 for n channels
 
-	var tempo = module.current_tempo;
-	var speed = module.current_speed;
 	var channelState = {/* Per channel : {note:0, tmpEffect:false, subnoteOffset:0} */}
 	var effectMemory = {/* Per channel : {[effect]:parameter} */}
 	
 	var orderStart = program.startPosition || 0;
 	var orderStop = (program.stopAfter)?(orderStart + program.stopAfter):module.num_orders;
+	
+	// Let libopenmpt guess the initial tempo and speed settings
+	module.set_position_order_row(orderStart, 0)
+	var tempo = module.current_tempo;
+	var speed = module.current_speed;
 	
 	for(var order = orderStart; order < orderStop; order++) {
 		console.log("Parsing file (pattern " + (order + 1) + "/" + module.num_orders + ")");
