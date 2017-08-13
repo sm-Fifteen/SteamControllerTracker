@@ -113,9 +113,10 @@ function updateToRoutine(update, state, memory) {
 	// moduleUpdate, channelState and channelMemory
 	const noteOffset = 12 * (program.octaveOffset || 0);
 	var note = update.note || state.note;
+	var noteReset = !!update.note;
 	var newRoutine;
 	var instrument = getInstrument(update.instrument);
-				
+	
 	if (update.note === -1){
 		state.tmpEffect = false;
 		newRoutine = new StopRoutine();
@@ -134,7 +135,8 @@ function updateToRoutine(update, state, memory) {
 				break;
 			case 2: // Portamento up
 			case 3: // Portamento down
-				var slideStep = update.parameter || memory[update.effect];
+				if (noteReset) state.subnoteOffset = 0;
+				var slideStep = update.parameter || memory[2]; // Up and down share the same memory
 				if (update.effect === 3) slideStep = -slideStep;
 				
 				newRoutine = new PortamentoNote(note + noteOffset, slideStep, 3, state, instrument.highNum, instrument.lowNum);
@@ -145,6 +147,7 @@ function updateToRoutine(update, state, memory) {
 				break;
 			case 5: // Vibrato
 				if(!memory[update.effect]) memory[update.effect] = {};
+				if (noteReset) state.subnoteOffset = 0;
 				var parameter = (update.parameter < 0)?(Math.abs(update.parameter) + 0x80):update.parameter; // TODO : Fix this in node-libopenmpt
 				
 				var vibratoSpeed = parameter >> 4 || memory[update.effect].speed;
