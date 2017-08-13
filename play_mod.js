@@ -80,6 +80,7 @@ var playerPromise = readFile(filePath).then(function(data) {
 					breakPattern = true;
 				} else if (update.effect == 16) { // Set speed (next row)
 					sequence.setSpeed(sequenceCounter + 1, update.parameter);
+					sequence.setLinesPerBeat(sequenceCounter + 1, 24/update.parameter);
 				} else if (update.effect == 17) { // Set tempo (next row)
 					sequence.setTempo(sequenceCounter + 1, update.parameter);
 				}
