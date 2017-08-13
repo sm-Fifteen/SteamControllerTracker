@@ -78,6 +78,10 @@ var playerPromise = readFile(filePath).then(function(data) {
 				// Look for song effects like speed changes even on channels that aren't played
 				if(update.effect == 14) { // Break pattern
 					breakPattern = true;
+				} else if (update.effect == 16) { // Set speed (next row)
+					sequence.setSpeed(sequenceCounter + 1, update.parameter);
+				} else if (update.effect == 17) { // Set tempo (next row)
+					sequence.setTempo(sequenceCounter + 1, update.parameter);
 				}
 				
 				var mapIndex = channelMap.indexOf(channel);
