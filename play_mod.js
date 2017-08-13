@@ -135,7 +135,8 @@ function updateToRoutine(update, state, memory) {
 	var newRoutine;
 	var instrument = getInstrument(update.instrument);
 	
-	if (update.note === -1){
+	if (update.note <= -1){
+		// Note fade, note cut or note stop
 		state.tmpEffect = false;
 		newRoutine = new StopRoutine();
 	} else if (instrument.pulse) {
