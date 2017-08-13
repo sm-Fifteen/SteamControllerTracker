@@ -6,7 +6,8 @@
   "dependencies": {
     "commander": "^2.9.0",
     "lodash": "^4.17.4",
-    "node-libopenmpt": "sm-Fifteen/node-libopenmpt"
+    "node-libopenmpt": "sm-Fifteen/node-libopenmpt",
+    "steam-controller-player": "file:node_modules/steam-controller-player"
   },
   "bundledDependencies": ["node-libopenmpt", "steam-controller-player"],
   "engines": {
