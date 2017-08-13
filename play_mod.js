@@ -166,10 +166,9 @@ function updateToRoutine(update, state, memory) {
 			case 5: // Vibrato
 				if(!memory[update.effect]) memory[update.effect] = {};
 				if (noteReset) state.subnoteOffset = 0;
-				var parameter = (update.parameter < 0)?(Math.abs(update.parameter) + 0x80):update.parameter; // TODO : Fix this in node-libopenmpt
 				
-				var vibratoSpeed = parameter >> 4 || memory[update.effect].speed;
-				var vibratoAmplitude = parameter & 0x0F || memory[update.effect].amplitude;
+				var vibratoSpeed = update.parameter >> 4 || memory[update.effect].speed;
+				var vibratoAmplitude = update.parameter & 0x0F || memory[update.effect].amplitude;
 				
 				// Leave the previous vibrato running if nothing has changed
 				if (state.note !== note || vibratoSpeed !== memory[update.effect].speed || vibratoAmplitude !== memory[update.effect].amplitude) {
